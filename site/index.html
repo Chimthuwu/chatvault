@@ -1,180 +1,191 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>ChatVault — Export any LLM chat to Markdown, PDF &amp; ZIP</title>
-<meta name="description" content="One-click exporter for ChatGPT, Claude, Gemini, Grok, DeepSeek and more. Turn any conversation into Markdown, PDF, HTML or ZIP — locally, with no account and no tracking.">
-<meta name="theme-color" content="#071a18">
-<link rel="icon" type="image/svg+xml" href="/favicon.svg">
-<meta property="og:type" content="website">
-<meta property="og:site_name" content="ChatVault">
-<meta property="og:title" content="ChatVault — Export any LLM chat to Markdown, PDF &amp; ZIP">
-<meta property="og:description" content="Your AI chats. Yours to keep. One-click export for ChatGPT, Claude, Gemini, Grok, DeepSeek &amp; friends — MD, PDF, HTML and ZIP, with no account needed.">
-<meta property="og:url" content="https://chatvault.nyan-anonymous-d45.workers.dev/">
-<meta property="og:image" content="https://chatvault.nyan-anonymous-d45.workers.dev/og-image.png">
-<meta property="og:image:secure_url" content="https://chatvault.nyan-anonymous-d45.workers.dev/og-image.png">
-<meta property="og:image:type" content="image/png">
-<meta property="og:image:width" content="1200">
-<meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="ChatVault — export AI conversations to Markdown, PDF and ZIP">
-<meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="ChatVault — Export any LLM chat to Markdown, PDF &amp; ZIP">
-<meta name="twitter:description" content="Your AI chats. Yours to keep. One-click export for ChatGPT, Claude, Gemini, Grok, DeepSeek &amp; friends.">
-<meta name="twitter:image" content="https://chatvault.nyan-anonymous-d45.workers.dev/og-image.png">
-<link rel="stylesheet" href="/styles.css">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#101310">
+  <title>ChatVault — Your conversations, kept.</title>
+  <meta name="description" content="A private, local-first workspace for preserving AI conversations. Import chats and export beautiful Markdown, PDF, HTML and ZIP archives.">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="ChatVault">
+  <meta property="og:title" content="ChatVault — Your conversations, kept.">
+  <meta property="og:description" content="Preserve your AI conversations in formats you own. Private, local-first exports.">
+  <meta property="og:url" content="https://chat-vault.pages.dev/">
+  <meta property="og:image" content="https://chat-vault.pages.dev/og-image.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
-<div class="glow glow-a"></div><div class="glow glow-b"></div>
+  <a class="skip-link" href="#main-content">Skip to workspace</a>
+  <div class="ambient ambient-one" aria-hidden="true"></div>
+  <div class="ambient ambient-two" aria-hidden="true"></div>
 
-<header class="site-header wrap">
-  <a class="brand" href="/" aria-label="ChatVault home">
-    <span class="brand-mark" aria-hidden="true">
-      <svg viewBox="0 0 48 48" fill="none"><rect x="6" y="8" width="36" height="32" rx="9" stroke="currentColor" stroke-width="2.5"/><path d="M14 19h18M14 26h13M14 33h9" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/><circle cx="35" cy="32" r="8" fill="#0b2421" stroke="#5fffd0" stroke-width="2.5"/><path d="M35 28v8m-4-4h8" stroke="#5fffd0" stroke-width="2.5" stroke-linecap="round"/></svg>
-    </span>
-    <span>Chat<span class="accent">Vault</span></span>
-  </a>
-  <nav>
-    <a href="#exporter">Exporter</a>
-    <a href="#beautify">Beautify</a>
-    <a href="#platforms">Platforms</a>
-    <a href="https://github.com/Chimthuwu/chatvault" target="_blank" rel="noopener">GitHub ↗</a>
-  </nav>
-</header>
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="Main navigation">
+      <a class="brand" href="/" aria-label="ChatVault home">
+        <span class="brand-symbol" aria-hidden="true">
+          <svg viewBox="0 0 40 40" fill="none"><path d="M8 5.5h17l7 7V34a2.5 2.5 0 0 1-2.5 2.5h-21A2.5 2.5 0 0 1 6 34V8a2.5 2.5 0 0 1 2-2.5Z" stroke="currentColor" stroke-width="1.8"/><path d="M24.5 6v7h7M12 19h14M12 24h14M12 29h9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="30" cy="29" r="7" fill="#a5f36b" stroke="#101310" stroke-width="2"/><path d="M30 25.5v7M26.5 29h7" stroke="#17200f" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </span>
+        <span class="brand-name">chat<span>vault</span></span>
+        <span class="brand-version">V4</span>
+      </a>
 
-<main>
-<section class="hero wrap">
-  <span class="pill">✦ v3.0 · now with PDF + ZIP + every LLM</span>
-  <h1>Your AI chats.<br><span class="gradient">Yours to keep.</span></h1>
-  <p class="lede">Turn a conversation into a clean <strong>Markdown</strong>, <strong>PDF</strong>, <strong>HTML</strong> or <strong>ZIP</strong> archive in one click. Works with ChatGPT, Claude, Gemini, Grok, DeepSeek and anything else with a chat window.</p>
-  <div class="hero-actions">
-    <a class="btn btn-primary" href="#exporter">Open the exporter →</a>
-    <a class="btn btn-ghost" href="https://github.com/Chimthuwu/chatvault/blob/main/userscripts/chatvault.user.js" target="_blank" rel="noopener">Get the userscript ↗</a>
-  </div>
-  <p class="micro">No account. No API key. No tracking. Everything runs in your browser.</p>
-</section>
+      <div class="sidebar-label">WORKSPACE</div>
+      <nav class="side-nav">
+        <a class="side-link active" href="#exporter"><span class="nav-icon">↳</span><span>Import conversation</span><kbd>I</kbd></a>
+        <a class="side-link" href="#beautify"><span class="nav-icon">✳</span><span>Beautify &amp; archive</span></a>
+        <a class="side-link" href="#platforms"><span class="nav-icon">◈</span><span>Platforms</span></a>
+      </nav>
 
-<section class="features wrap" aria-label="Features">
-  <article class="card"><div class="card-icon">📄</div><h3>Markdown that survives</h3><p>Code blocks, links, lists, tables, timestamps and roles — preserved in a portable <code>.md</code> file.</p></article>
-  <article class="card"><div class="card-icon">🧾</div><h3>Real PDF, no service</h3><p>Dependency-free text PDF you can search and select, plus a print-perfect option for full styling.</p></article>
-  <article class="card"><div class="card-icon">🗜️</div><h3>One ZIP, everything</h3><p>Markdown, PDF, HTML and JSON bundled into a single archive. Save it, git it, forget it.</p></article>
-  <article class="card"><div class="card-icon">🌐</div><h3>Multi-LLM by design</h3><p>Structured ChatGPT extraction, layered selectors for the rest, and a generic fallback for new apps.</p></article>
-</section>
-
-<section id="exporter" class="exporter wrap">
-  <div class="section-head"><h2>The exporter</h2><p>Three ways in. Pick whichever works for your platform.</p></div>
-  <div class="tool-card">
-    <div class="tabs" role="tablist" aria-label="Import mode">
-      <button class="tab active" data-mode="url" role="tab" aria-selected="true">🔗 Public share URL</button>
-      <button class="tab" data-mode="json" role="tab" aria-selected="false">📦 Paste JSON export</button>
-      <button class="tab" data-mode="text" role="tab" aria-selected="false">✍️ Paste transcript</button>
-    </div>
-
-    <div class="mode-panel" id="panel-url">
-      <label for="url-input">Public share link</label>
-      <input id="url-input" type="url" placeholder="https://chatgpt.com/share/..." autocomplete="off" spellcheck="false">
-      <p class="hint">Server-side retrieval works for public shares. If a platform blocks it, switch to Paste JSON or use the userscript on the open chat.</p>
-    </div>
-    <div class="mode-panel hidden" id="panel-json">
-      <label for="json-input">Conversation JSON</label>
-      <textarea id="json-input" rows="7" placeholder='Paste the contents of conversations.json, a Claude/Gemini/Grok/DeepSeek export, or [{"role":"user","content":"hello"}]' spellcheck="false"></textarea>
-      <p class="hint">Converted entirely in your browser — nothing is uploaded.</p>
-    </div>
-    <div class="mode-panel hidden" id="panel-text">
-      <label for="text-input">Plain transcript</label>
-      <textarea id="text-input" rows="7" placeholder="You: hello&#10;Assistant: hi there"></textarea>
-      <p class="hint">Lines starting with <code>You:</code>, <code>User:</code> or <code>Assistant:</code> become separate messages.</p>
-    </div>
-
-    <button id="extract-btn" class="btn btn-primary btn-wide">Extract conversation</button>
-    <p id="status" class="status" role="status" aria-live="polite">Ready when you are ✦</p>
-
-    <div id="preview" class="preview hidden" aria-live="polite">
-      <div class="preview-head">
-        <h3 id="preview-title">Conversation</h3>
-        <span id="preview-meta" class="pill"></span>
+      <div class="sidebar-rule"></div>
+      <div class="sidebar-label">YOUR TOOLKIT</div>
+      <div class="toolkit-list">
+        <div class="toolkit-item"><span class="toolkit-dot"></span><span>Markdown</span><small>.md</small></div>
+        <div class="toolkit-item"><span class="toolkit-dot"></span><span>Portable document</span><small>.pdf</small></div>
+        <div class="toolkit-item"><span class="toolkit-dot"></span><span>Web archive</span><small>.html</small></div>
+        <div class="toolkit-item"><span class="toolkit-dot"></span><span>Full bundle</span><small>.zip</small></div>
       </div>
-      <div id="preview-messages" class="preview-messages"></div>
-      <div id="warnings" class="warnings hidden"></div>
-    </div>
 
-    <div id="exports" class="exports hidden">
-      <h3>Download</h3>
-      <div class="export-grid">
-        <button data-export="md" class="export-btn"><span>📄</span><strong>Markdown</strong><small>.md</small></button>
-        <button data-export="pdf" class="export-btn"><span>🧾</span><strong>Text PDF</strong><small>.pdf</small></button>
-        <button data-export="print" class="export-btn"><span>🖨️</span><strong>Print-perfect</strong><small>browser dialog</small></button>
-        <button data-export="html" class="export-btn"><span>🌈</span><strong>HTML archive</strong><small>.html</small></button>
-        <button data-export="json" class="export-btn"><span>🧱</span><strong>Raw data</strong><small>.json</small></button>
-        <button data-export="zip" class="export-btn featured"><span>🗜️</span><strong>Everything ZIP</strong><small>md + pdf + html + json</small></button>
+      <div class="sidebar-bottom">
+        <div class="privacy-card">
+          <span class="privacy-icon">⌁</span>
+          <div><strong>Private by design</strong><p>Local imports stay in your browser. No account. No tracking.</p></div>
+        </div>
+        <a class="github-link" href="https://github.com/Chimthuwu/chatvault" target="_blank" rel="noopener noreferrer"><span>↗</span> GitHub repository</a>
+        <div class="sidebar-foot">CHATVAULT <span>·</span> OPEN SOURCE</div>
       </div>
-      <button id="copy-btn" class="btn btn-ghost btn-small">Copy Markdown to clipboard</button>
-    </div>
-  </div>
-</section>
+    </aside>
 
-<section id="beautify" class="wrap beautify-section">
-  <div class="section-head"><h2>Beautify &amp; Archive</h2><p>One click: clean presentation, preserved content, before/after preview, plus an Intelligence Report.</p></div>
-  <div class="tool-card">
-    <label for="beautify-input">Raw export — Markdown, plain text or JSON</label>
-    <textarea id="beautify-input" rows="8" placeholder="Paste a raw ChatGPT Markdown export, plain conversation text, or a JSON export here…" spellcheck="false"></textarea>
-    <div class="beautify-toolbar">
-      <button id="use-conversation" class="btn btn-ghost btn-small">Use extracted conversation ↑</button>
-      <label class="field">Style
-        <select id="beautify-style">
-          <option value="clean">Clean Markdown</option>
-          <option value="report" selected>Technical Report</option>
-          <option value="kb">Knowledge Base</option>
-          <option value="raw">Raw Archive</option>
-        </select>
-      </label>
-      <label class="check"><input type="checkbox" id="opt-toc" checked> Table of contents</label>
-      <label class="check"><input type="checkbox" id="opt-metadata" checked> Clean metadata</label>
-      <label class="check"><input type="checkbox" id="opt-report" checked> Intelligence Report</label>
-    </div>
-    <button id="beautify-btn" class="btn btn-primary btn-wide">✨ Beautify &amp; Archive</button>
-    <p id="beautify-status" class="status" role="status" aria-live="polite">Your original text is never rewritten — only the presentation changes.</p>
+    <main class="main-area" id="main-content">
+      <header class="topbar">
+        <div class="breadcrumb"><span>Workspace</span><span class="crumb-slash">/</span><strong>Import</strong></div>
+        <div class="topbar-right"><span class="local-indicator"><i></i> LOCAL-FIRST</span><a class="topbar-github" href="https://github.com/Chimthuwu/chatvault" target="_blank" rel="noopener noreferrer">View source <span>↗</span></a></div>
+      </header>
 
-    <div id="diff-view" class="diff hidden">
-      <div class="diff-head"><span>⬅ BEFORE <span id="before-stats" class="pill"></span></span><span>AFTER ➡ <span id="after-stats" class="pill"></span></span></div>
-      <div class="diff-grid"><pre id="before-md"></pre><pre id="after-md"></pre></div>
-      <div class="beautify-actions">
-        <button id="dl-beautified" class="btn btn-primary btn-small">↓ Beautified .md</button>
-        <button id="dl-archive" class="btn btn-ghost btn-small">🗜️ Full archive ZIP</button>
-        <button id="copy-beautified" class="btn btn-ghost btn-small">Copy Markdown</button>
+      <div class="page-content">
+        <section class="welcome">
+          <div class="welcome-copy">
+            <div class="eyebrow"><span class="eyebrow-line"></span> YOUR CONVERSATIONS, KEPT</div>
+            <h1>Keep the good<br><span>conversations.</span></h1>
+            <p>Bring a chat in. Give it a home. Take it anywhere. ChatVault turns conversations from your favourite AI tools into clean, portable archives you actually own.</p>
+          </div>
+          <div class="welcome-art" aria-hidden="true">
+            <div class="orbit orbit-a"></div><div class="orbit orbit-b"></div>
+            <div class="vault-document"><div class="doc-fold"></div><div class="doc-lines"><i></i><i></i><i></i><i></i></div><div class="doc-seal">✳</div></div>
+            <span class="float-tag tag-md">.MD</span><span class="float-tag tag-pdf">.PDF</span><span class="float-tag tag-zip">.ZIP</span>
+          </div>
+        </section>
+
+        <section id="exporter" class="workspace-section">
+          <div class="section-heading">
+            <div><div class="eyebrow"><span class="eyebrow-line"></span> 01 / IMPORT</div><h2>Bring a conversation in</h2><p>Choose the source that works for you. Your content stays yours.</p></div>
+            <span class="step-chip"><span>01</span> INPUT</span>
+          </div>
+
+          <div class="import-layout">
+            <div class="panel import-panel">
+              <div class="panel-topline"><span class="panel-kicker">NEW ARCHIVE</span><span class="secure-mark">⌁ SECURE INPUT</span></div>
+              <div class="tabs" role="tablist" aria-label="Import method">
+                <button class="tab active" data-mode="url" role="tab" aria-selected="true" aria-controls="panel-url" id="tab-url" type="button"><span>↗</span> Share URL</button>
+                <button class="tab" data-mode="json" role="tab" aria-selected="false" aria-controls="panel-json" id="tab-json" type="button"><span>{ }</span> JSON file</button>
+                <button class="tab" data-mode="text" role="tab" aria-selected="false" aria-controls="panel-text" id="tab-text" type="button"><span>≡</span> Transcript</button>
+              </div>
+
+              <div class="mode-panel" id="panel-url" role="tabpanel" aria-labelledby="tab-url">
+                <label for="url-input">Public conversation link</label>
+                <div class="input-shell"><span class="input-prefix">↗</span><input id="url-input" type="url" placeholder="https://chatgpt.com/share/..." autocomplete="off" spellcheck="false"></div>
+                <p class="hint">Paste a public share link. Retrieval is best-effort and depends on the platform allowing access.</p>
+              </div>
+              <div class="mode-panel hidden" id="panel-json" role="tabpanel" aria-labelledby="tab-json">
+                <label for="json-input">Conversation JSON</label>
+                <textarea id="json-input" rows="7" placeholder='Paste a conversations.json export or a JSON array of messages…' spellcheck="false"></textarea>
+                <p class="hint"><span class="hint-lock">⌁</span> Parsed entirely in your browser. The file is not uploaded.</p>
+              </div>
+              <div class="mode-panel hidden" id="panel-text" role="tabpanel" aria-labelledby="tab-text">
+                <label for="text-input">Plain-text transcript</label>
+                <textarea id="text-input" rows="7" placeholder="You: Hey, can you help me with something?&#10;Assistant: Absolutely. What are you working on?"></textarea>
+                <p class="hint">Use speaker labels such as <code>You:</code>, <code>User:</code> and <code>Assistant:</code> to split messages.</p>
+              </div>
+
+              <div class="import-footer"><div class="input-note"><span class="note-check">✓</span> No account or API key required</div><button id="extract-btn" class="btn btn-primary" type="button"><span>Extract conversation</span><span class="btn-arrow">→</span></button></div>
+              <p id="status" class="status" role="status" aria-live="polite">Ready when you are. Your archive starts here.</p>
+            </div>
+
+            <aside class="format-panel">
+              <div class="format-heading"><span class="format-heading-icon">✳</span><div><strong>One conversation.</strong><br><span>Every format you need.</span></div></div>
+              <div class="format-row"><span class="format-icon md-icon">M↓</span><div><strong>Markdown</strong><small>Readable, portable, future-proof</small></div><span class="format-ext">.md</span></div>
+              <div class="format-row"><span class="format-icon pdf-icon">▤</span><div><strong>PDF document</strong><small>Searchable text or print-perfect</small></div><span class="format-ext">.pdf</span></div>
+              <div class="format-row"><span class="format-icon html-icon">⌘</span><div><strong>HTML archive</strong><small>A standalone page you can keep</small></div><span class="format-ext">.html</span></div>
+              <div class="format-row"><span class="format-icon zip-icon">▣</span><div><strong>Everything bundle</strong><small>All exports, packed together</small></div><span class="format-ext">.zip</span></div>
+              <div class="format-foot"><span>✦</span> Built for the long term. Not another locked-in format.</div>
+            </aside>
+          </div>
+
+          <div id="preview" class="panel result-panel hidden" aria-live="polite">
+            <div class="result-heading"><div><div class="panel-kicker">EXTRACTED CONTENT</div><h3 id="preview-title">Conversation</h3></div><span id="preview-meta" class="result-meta"></span></div>
+            <div id="preview-messages" class="preview-messages"></div>
+            <div id="warnings" class="warnings hidden"></div>
+          </div>
+
+          <div id="exports" class="panel exports-panel hidden">
+            <div class="result-heading"><div><div class="panel-kicker">READY TO TAKE WITH YOU</div><h3>Export your archive</h3></div><button id="copy-btn" class="btn btn-subtle btn-small" type="button">Copy Markdown ↗</button></div>
+            <div class="export-grid">
+              <button data-export="md" class="export-btn" type="button"><span class="export-symbol">M↓</span><strong>Markdown</strong><small>.md · portable text</small><b>↓</b></button>
+              <button data-export="pdf" class="export-btn" type="button"><span class="export-symbol">▤</span><strong>Text PDF</strong><small>.pdf · selectable text</small><b>↓</b></button>
+              <button data-export="print" class="export-btn" type="button"><span class="export-symbol">▧</span><strong>Print-perfect</strong><small>PDF · browser dialog</small><b>↗</b></button>
+              <button data-export="html" class="export-btn" type="button"><span class="export-symbol">⌘</span><strong>HTML archive</strong><small>.html · standalone page</small><b>↓</b></button>
+              <button data-export="json" class="export-btn" type="button"><span class="export-symbol">{ }</span><strong>Raw data</strong><small>.json · normalized source</small><b>↓</b></button>
+              <button data-export="zip" class="export-btn featured" type="button"><span class="export-symbol">▣</span><strong>Everything ZIP</strong><small>.zip · all formats together</small><b>↓</b></button>
+            </div>
+          </div>
+        </section>
+
+        <section id="beautify" class="workspace-section beautify-section">
+          <div class="section-heading">
+            <div><div class="eyebrow"><span class="eyebrow-line"></span> 02 / REFINE</div><h2>Make it a proper archive</h2><p>Clean up the presentation without rewriting the original content.</p></div>
+            <span class="step-chip"><span>02</span> PRESENTATION</span>
+          </div>
+          <div class="panel beautify-panel">
+            <div class="beautify-intro"><div class="beautify-mark">✳</div><div><strong>Beautify &amp; Archive</strong><p>Turn a raw export into a structured document, complete with navigation and an extractive Intelligence Report.</p></div></div>
+            <label class="field-label" for="beautify-input">SOURCE DOCUMENT</label>
+            <textarea id="beautify-input" rows="8" placeholder="Paste a raw ChatGPT Markdown export, plain conversation text, or a JSON export here…" spellcheck="false"></textarea>
+            <div class="beautify-toolbar">
+              <button id="use-conversation" class="btn btn-subtle btn-small" type="button">↑ Use extracted conversation</button>
+              <label class="field">Style
+                <select id="beautify-style"><option value="clean">Clean Markdown</option><option value="report" selected>Technical Report</option><option value="kb">Knowledge Base</option><option value="raw">Raw Archive</option></select>
+              </label>
+              <label class="check"><input type="checkbox" id="opt-toc" checked> Table of contents</label>
+              <label class="check"><input type="checkbox" id="opt-metadata" checked> Clean metadata</label>
+              <label class="check"><input type="checkbox" id="opt-report" checked> Intelligence Report</label>
+            </div>
+            <div class="beautify-submit"><button id="beautify-btn" class="btn btn-primary" type="button">Beautify document <span class="btn-arrow">→</span></button><p id="beautify-status" class="status" role="status" aria-live="polite">Your original text is never rewritten — only the presentation changes.</p></div>
+            <div id="diff-view" class="diff hidden">
+              <div class="diff-head"><span>BEFORE <span id="before-stats" class="pill"></span></span><span>AFTER <span id="after-stats" class="pill"></span></span></div>
+              <div class="diff-grid"><pre id="before-md"></pre><pre id="after-md"></pre></div>
+              <div class="beautify-actions"><button id="dl-beautified" class="btn btn-primary btn-small" type="button">↓ Beautified .md</button><button id="dl-archive" class="btn btn-subtle btn-small" type="button">▣ Full archive ZIP</button><button id="copy-beautified" class="btn btn-subtle btn-small" type="button">Copy Markdown</button></div>
+            </div>
+          </div>
+        </section>
+
+        <section id="platforms" class="workspace-section platforms-section">
+          <div class="section-heading"><div><div class="eyebrow"><span class="eyebrow-line"></span> 03 / COMPATIBILITY</div><h2>One vault. Many sources.</h2><p>Purpose-built extraction where possible, graceful fallbacks where needed.</p></div><span class="step-chip"><span>03</span> SOURCES</span></div>
+          <div class="platform-grid">
+            <div class="platform"><span class="platform-glyph">✳</span><strong>ChatGPT</strong><small>Structured + DOM</small></div>
+            <div class="platform"><span class="platform-glyph">✻</span><strong>Claude</strong><small>DOM extraction</small></div>
+            <div class="platform"><span class="platform-glyph">✦</span><strong>Gemini</strong><small>DOM extraction</small></div>
+            <div class="platform"><span class="platform-glyph">𝕏</span><strong>Grok</strong><small>DOM extraction</small></div>
+            <div class="platform"><span class="platform-glyph">◆</span><strong>DeepSeek</strong><small>DOM extraction</small></div>
+            <div class="platform"><span class="platform-glyph">◈</span><strong>Perplexity</strong><small>DOM extraction</small></div>
+            <div class="platform"><span class="platform-glyph">▣</span><strong>Copilot</strong><small>DOM extraction</small></div>
+            <div class="platform platform-generic"><span class="platform-glyph">＋</span><strong>More platforms</strong><small>Generic fallback</small></div>
+          </div>
+        </section>
+
+        <footer class="app-footer"><a class="footer-brand" href="/">chat<span>vault</span></a><span>Keep what matters. Leave nothing locked away.</span><a href="https://github.com/Chimthuwu/chatvault" target="_blank" rel="noopener noreferrer">MIT licensed <b>↗</b></a></footer>
       </div>
-    </div>
+    </main>
   </div>
-</section>
-
-<section id="platforms" class="wrap platforms">
-  <div class="section-head"><h2>Works where you chat</h2><p>Structured where possible, selectors where needed, heuristic everywhere else.</p></div>
-  <div class="platform-grid">
-    <div class="platform"><span>✳</span><strong>ChatGPT</strong><small>backend + DOM</small></div>
-    <div class="platform"><span>✻</span><strong>Claude</strong><small>DOM</small></div>
-    <div class="platform"><span>✦</span><strong>Gemini</strong><small>DOM</small></div>
-    <div class="platform"><span>𝕏</span><strong>Grok</strong><small>DOM</small></div>
-    <div class="platform"><span>◆</span><strong>DeepSeek</strong><small>DOM</small></div>
-    <div class="platform"><span>◈</span><strong>Perplexity</strong><small>DOM</small></div>
-    <div class="platform"><span>▣</span><strong>Copilot</strong><small>DOM</small></div>
-    <div class="platform"><span>⋯</span><strong>Anything else</strong><small>generic fallback</small></div>
-  </div>
-</section>
-
-<section class="wrap steps">
-  <div class="section-head"><h2>Three ways to use it</h2></div>
-  <div class="steps-grid">
-    <div class="card"><span class="step-num">01</span><h3>Web app</h3><p>Paste a public share URL, a JSON export or a transcript here. Convert and download — no install.</p></div>
-    <div class="card"><span class="step-num">02</span><h3>Userscript</h3><p>Install <code>chatvault.user.js</code> in Tampermonkey and get MD / PDF / ZIP buttons right on the chat page.</p></div>
-    <div class="card"><span class="step-num">03</span><h3>Hermes skill</h3><p>Ask Hermes to export a chat. The <code>chatvault</code> skill converts local JSON files into all formats via CLI.</p></div>
-  </div>
-</section>
-</main>
-
-<footer class="wrap footer">
-  <span>ChatVault · MIT · built for chat hoarders (◕‿◕)</span>
-  <span><a href="https://github.com/Chimthuwu/chatvault" target="_blank" rel="noopener">Source &amp; issues ↗</a></span>
-</footer>
-<script type="module" src="/app.js"></script>
+  <script type="module" src="/app.js"></script>
 </body>
 </html>
