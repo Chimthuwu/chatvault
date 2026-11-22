@@ -1,0 +1,16 @@
+[
+  {
+    "title": "Sample chat with an assistant",
+    "source": "https://chatgpt.com/share/example",
+    "messages": [
+      { "role": "user", "content": "Give me a tiny Python snippet with a code block.", "timestamp": "2026-11-22T12:00:00Z" },
+      { "role": "assistant", "content": [
+        { "type": "text", "text": "Sure thing:" },
+        { "type": "code", "language": "python", "text": "print('hello, vault')" }
+      ], "timestamp": "2026-11-22T12:00:05Z" },
+      { "role": "user", "content": "Now put it in a ZIP with a PDF and HTML copy." },
+      { "role": "assistant", "content": "Run `node scripts/cli.mjs --input examples/sample-conversation.json --out ./my-chat` and grab the archive." }
+    ],
+    "metadata": { "platform": "chatgpt", "extractionMethod": "sample", "warnings": [] }
+  }
+]

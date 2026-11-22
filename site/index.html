@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ChatVault — Export any LLM chat to Markdown, PDF &amp; ZIP</title>
+<meta name="description" content="One-click exporter for ChatGPT, Claude, Gemini, Grok, DeepSeek and more. Turn any conversation into Markdown, PDF, HTML or ZIP — locally, with no account and no tracking.">
+<meta name="theme-color" content="#071a18">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="ChatVault">
+<meta property="og:title" content="ChatVault — Export any LLM chat to Markdown, PDF &amp; ZIP">
+<meta property="og:description" content="Your AI chats. Yours to keep. One-click export for ChatGPT, Claude, Gemini, Grok, DeepSeek &amp; friends — MD, PDF, HTML and ZIP, with no account needed.">
+<meta property="og:url" content="https://chatvault.nyan-anonymous-d45.workers.dev/">
+<meta property="og:image" content="https://chatvault.nyan-anonymous-d45.workers.dev/og-image.png">
+<meta property="og:image:secure_url" content="https://chatvault.nyan-anonymous-d45.workers.dev/og-image.png">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="ChatVault — export AI conversations to Markdown, PDF and ZIP">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="ChatVault — Export any LLM chat to Markdown, PDF &amp; ZIP">
+<meta name="twitter:description" content="Your AI chats. Yours to keep. One-click export for ChatGPT, Claude, Gemini, Grok, DeepSeek &amp; friends.">
+<meta name="twitter:image" content="https://chatvault.nyan-anonymous-d45.workers.dev/og-image.png">
+<link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+<div class="glow glow-a"></div><div class="glow glow-b"></div>
+
+<header class="site-header wrap">
+  <a class="brand" href="/" aria-label="ChatVault home">
+    <span class="brand-mark" aria-hidden="true">
+      <svg viewBox="0 0 48 48" fill="none"><rect x="6" y="8" width="36" height="32" rx="9" stroke="currentColor" stroke-width="2.5"/><path d="M14 19h18M14 26h13M14 33h9" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/><circle cx="35" cy="32" r="8" fill="#0b2421" stroke="#5fffd0" stroke-width="2.5"/><path d="M35 28v8m-4-4h8" stroke="#5fffd0" stroke-width="2.5" stroke-linecap="round"/></svg>
+    </span>
+    <span>Chat<span class="accent">Vault</span></span>
+  </a>
+  <nav>
+    <a href="#exporter">Exporter</a>
+    <a href="#platforms">Platforms</a>
+    <a href="https://github.com/Chimthuwu/chatvault" target="_blank" rel="noopener">GitHub ↗</a>
+  </nav>
+</header>
+
+<main>
+<section class="hero wrap">
+  <span class="pill">✦ v3.0 · now with PDF + ZIP + every LLM</span>
+  <h1>Your AI chats.<br><span class="gradient">Yours to keep.</span></h1>
+  <p class="lede">Turn a conversation into a clean <strong>Markdown</strong>, <strong>PDF</strong>, <strong>HTML</strong> or <strong>ZIP</strong> archive in one click. Works with ChatGPT, Claude, Gemini, Grok, DeepSeek and anything else with a chat window.</p>
+  <div class="hero-actions">
+    <a class="btn btn-primary" href="#exporter">Open the exporter →</a>
+    <a class="btn btn-ghost" href="https://github.com/Chimthuwu/chatvault/blob/main/userscripts/chatvault.user.js" target="_blank" rel="noopener">Get the userscript ↗</a>
+  </div>
+  <p class="micro">No account. No API key. No tracking. Everything runs in your browser.</p>
+</section>
+
+<section class="features wrap" aria-label="Features">
+  <article class="card"><div class="card-icon">📄</div><h3>Markdown that survives</h3><p>Code blocks, links, lists, tables, timestamps and roles — preserved in a portable <code>.md</code> file.</p></article>
+  <article class="card"><div class="card-icon">🧾</div><h3>Real PDF, no service</h3><p>Dependency-free text PDF you can search and select, plus a print-perfect option for full styling.</p></article>
+  <article class="card"><div class="card-icon">🗜️</div><h3>One ZIP, everything</h3><p>Markdown, PDF, HTML and JSON bundled into a single archive. Save it, git it, forget it.</p></article>
+  <article class="card"><div class="card-icon">🌐</div><h3>Multi-LLM by design</h3><p>Structured ChatGPT extraction, layered selectors for the rest, and a generic fallback for new apps.</p></article>
+</section>
+
+<section id="exporter" class="exporter wrap">
+  <div class="section-head"><h2>The exporter</h2><p>Three ways in. Pick whichever works for your platform.</p></div>
+  <div class="tool-card">
+    <div class="tabs" role="tablist" aria-label="Import mode">
+      <button class="tab active" data-mode="url" role="tab" aria-selected="true">🔗 Public share URL</button>
+      <button class="tab" data-mode="json" role="tab" aria-selected="false">📦 Paste JSON export</button>
+      <button class="tab" data-mode="text" role="tab" aria-selected="false">✍️ Paste transcript</button>
+    </div>
+
+    <div class="mode-panel" id="panel-url">
+      <label for="url-input">Public share link</label>
+      <input id="url-input" type="url" placeholder="https://chatgpt.com/share/..." autocomplete="off" spellcheck="false">
+      <p class="hint">Server-side retrieval works for public shares. If a platform blocks it, switch to Paste JSON or use the userscript on the open chat.</p>
+    </div>
+    <div class="mode-panel hidden" id="panel-json">
+      <label for="json-input">Conversation JSON</label>
+      <textarea id="json-input" rows="7" placeholder='Paste the contents of conversations.json, a Claude/Gemini/Grok/DeepSeek export, or [{"role":"user","content":"hello"}]' spellcheck="false"></textarea>
+      <p class="hint">Converted entirely in your browser — nothing is uploaded.</p>
+    </div>
+    <div class="mode-panel hidden" id="panel-text">
+      <label for="text-input">Plain transcript</label>
+      <textarea id="text-input" rows="7" placeholder="You: hello&#10;Assistant: hi there"></textarea>
+      <p class="hint">Lines starting with <code>You:</code>, <code>User:</code> or <code>Assistant:</code> become separate messages.</p>
+    </div>
+
+    <button id="extract-btn" class="btn btn-primary btn-wide">Extract conversation</button>
+    <p id="status" class="status" role="status" aria-live="polite">Ready when you are ✦</p>
+
+    <div id="preview" class="preview hidden" aria-live="polite">
+      <div class="preview-head">
+        <h3 id="preview-title">Conversation</h3>
+        <span id="preview-meta" class="pill"></span>
+      </div>
+      <div id="preview-messages" class="preview-messages"></div>
+      <div id="warnings" class="warnings hidden"></div>
+    </div>
+
+    <div id="exports" class="exports hidden">
+      <h3>Download</h3>
+      <div class="export-grid">
+        <button data-export="md" class="export-btn"><span>📄</span><strong>Markdown</strong><small>.md</small></button>
+        <button data-export="pdf" class="export-btn"><span>🧾</span><strong>Text PDF</strong><small>.pdf</small></button>
+        <button data-export="print" class="export-btn"><span>🖨️</span><strong>Print-perfect</strong><small>browser dialog</small></button>
+        <button data-export="html" class="export-btn"><span>🌈</span><strong>HTML archive</strong><small>.html</small></button>
+        <button data-export="json" class="export-btn"><span>🧱</span><strong>Raw data</strong><small>.json</small></button>
+        <button data-export="zip" class="export-btn featured"><span>🗜️</span><strong>Everything ZIP</strong><small>md + pdf + html + json</small></button>
+      </div>
+      <button id="copy-btn" class="btn btn-ghost btn-small">Copy Markdown to clipboard</button>
+    </div>
+  </div>
+</section>
+
+<section id="platforms" class="wrap platforms">
+  <div class="section-head"><h2>Works where you chat</h2><p>Structured where possible, selectors where needed, heuristic everywhere else.</p></div>
+  <div class="platform-grid">
+    <div class="platform"><span>✳</span><strong>ChatGPT</strong><small>backend + DOM</small></div>
+    <div class="platform"><span>✻</span><strong>Claude</strong><small>DOM</small></div>
+    <div class="platform"><span>✦</span><strong>Gemini</strong><small>DOM</small></div>
+    <div class="platform"><span>𝕏</span><strong>Grok</strong><small>DOM</small></div>
+    <div class="platform"><span>◆</span><strong>DeepSeek</strong><small>DOM</small></div>
+    <div class="platform"><span>◈</span><strong>Perplexity</strong><small>DOM</small></div>
+    <div class="platform"><span>▣</span><strong>Copilot</strong><small>DOM</small></div>
+    <div class="platform"><span>⋯</span><strong>Anything else</strong><small>generic fallback</small></div>
+  </div>
+</section>
+
+<section class="wrap steps">
+  <div class="section-head"><h2>Three ways to use it</h2></div>
+  <div class="steps-grid">
+    <div class="card"><span class="step-num">01</span><h3>Web app</h3><p>Paste a public share URL, a JSON export or a transcript here. Convert and download — no install.</p></div>
+    <div class="card"><span class="step-num">02</span><h3>Userscript</h3><p>Install <code>chatvault.user.js</code> in Tampermonkey and get MD / PDF / ZIP buttons right on the chat page.</p></div>
+    <div class="card"><span class="step-num">03</span><h3>Hermes skill</h3><p>Ask Hermes to export a chat. The <code>chatvault</code> skill converts local JSON files into all formats via CLI.</p></div>
+  </div>
+</section>
+</main>
+
+<footer class="wrap footer">
+  <span>ChatVault · MIT · built for chat hoarders (◕‿◕)</span>
+  <span><a href="https://github.com/Chimthuwu/chatvault" target="_blank" rel="noopener">Source &amp; issues ↗</a></span>
+</footer>
+<script type="module" src="/app.js"></script>
+</body>
+</html>

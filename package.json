@@ -1,0 +1,18 @@
+{
+  "name": "chatvault",
+  "version": "3.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Export any LLM chat to Markdown, PDF, HTML and ZIP — browser userscript, Cloudflare Worker web app, and Hermes skill.",
+  "scripts": {
+    "test": "node scripts/build-userscript.mjs && node --test tests/*.test.mjs",
+    "build:userscript": "node scripts/build-userscript.mjs",
+    "build:og": "python3 scripts/generate-og-image.py",
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "cli": "node scripts/cli.mjs"
+  },
+  "devDependencies": {
+    "wrangler": "^4.159.0"
+  }
+}

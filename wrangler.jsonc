@@ -1,0 +1,13 @@
+{
+  "$schema": "https://developers.cloudflare.com/workers/wrangler/config-schema/",
+  "name": "chatvault",
+  "main": "src/worker/index.js",
+  "compatibility_date": "2026-11-20",
+  "assets": {
+    "directory": "./site",
+    "run_worker_first": ["/api/*"]
+  },
+  "observability": {
+    "enabled": true
+  }
+}
