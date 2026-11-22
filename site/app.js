@@ -4,9 +4,10 @@ import {
   downloadBlob, messageToText, roleLabel, slugify, openPrintWindow
 } from './core.js';
 import { makeZip, makePdf, blobBytes } from './archive.js';
+import { beautifyMarkdown, buildIntelligenceReport, buildEditorialPrompt, detectInputType } from './beautify.js';
 
 const $ = id => document.getElementById(id);
-const state = { conversation: null, mode: 'url' };
+const state = { conversation: null, beautified: null, mode: 'url' };
 
 function setStatus(message, error = false) {
   const el = $('status');
@@ -154,3 +155,92 @@ $('copy-btn').addEventListener('click', async () => {
   } catch { setStatus('Clipboard blocked by the browser. Use the Markdown download instead.', true); }
 });
 $('url-input').addEventListener('keydown', e => { if (e.key === 'Enter') extract(); });
+
+// ---- Phase 2: Beautify & Archive ----
+function setBeautifyStatus(message, error = false) {
+  const el = $('beautify-status');
+  el.textContent = message;
+  el.classList.toggle('error', error);
+}
+function textAsConversation(text, title) {
+  return toConversation({
+    title, source: 'local document', messages: [{ role: 'assistant', content: text }],
+    platform: 'document', method: 'document import'
+  });
+}
+function runBeautify() {
+  try {
+    setBeautifyStatus('Analyzing document structure…');
+    let source = $('beautify-input').value.trim();
+    let conv = null;
+    let meta = {};
+    if (!source && state.conversation) source = renderMarkdown(state.conversation);
+    if (!source) throw new Error('Paste a document above, or extract a conversation first.');
+
+    if (detectInputType(source) === 'json') {
+      conv = parseImport(source, 'local JSON import');
+      source = renderMarkdown(conv);
+      meta = {
+        source: conv.source, exported: conv.exportedAt, messages: conv.messages.length,
+        platform: conv.metadata?.platform, extraction: conv.metadata?.extractionMethod
+      };
+    }
+    const style = $('beautify-style').value;
+    setBeautifyStatus(`Applying the ${style} profile…`);
+    const beautified = beautifyMarkdown(source, {
+      style, metadata: meta,
+      toc: $('opt-toc').checked,
+      metadataHeader: $('opt-metadata').checked
+    });
+    const report = $('opt-report').checked ? buildIntelligenceReport(source) : '';
+    const prompt = buildEditorialPrompt(source);
+    state.beautified = { source, beautified, report, prompt, style, conv };
+
+    $('before-md').textContent = source;
+    $('after-md').textContent = beautified;
+    $('before-stats').textContent = `${source.split('\n').length} lines · ${source.length} chars`;
+    $('after-stats').textContent = `${beautified.split('\n').length} lines · ${beautified.length} chars`;
+    $('diff-view').classList.remove('hidden');
+    setBeautifyStatus(`✓ Beautified with ${style}. Original preserved in the left pane.`);
+  } catch (error) {
+    setBeautifyStatus(error.message || 'Beautify failed.', true);
+  }
+}
+async function downloadBeautifiedArchive() {
+  const result = state.beautified;
+  if (!result) return setBeautifyStatus('Beautify a document first.', true);
+  try {
+    setBeautifyStatus('Packing the archive…');
+    const files = [
+      { name: 'original.md', data: result.source },
+      { name: result.style + '.md', data: result.beautified },
+      { name: 'editorial-prompt.md', data: result.prompt }
+    ];
+    if (result.report) files.push({ name: 'intelligence-report.md', data: result.report });
+    files.push({ name: 'beautified.pdf', data: await blobBytes(makePdf(textAsConversation(result.beautified, 'Beautified export'))) });
+    if (result.conv) files.push({ name: 'source.json', data: JSON.stringify(result.conv, null, 2) });
+    downloadBlob(await makeZip(files), 'chatvault-beautified.zip');
+    setBeautifyStatus(`✓ Archive saved with ${files.length} files.`);
+  } catch (error) {
+    setBeautifyStatus('Archive failed: ' + (error.message || error), true);
+  }
+}
+$('beautify-btn').addEventListener('click', runBeautify);
+$('dl-archive').addEventListener('click', downloadBeautifiedArchive);
+$('use-conversation').addEventListener('click', () => {
+  if (!state.conversation) return setBeautifyStatus('Extract a conversation first.', true);
+  $('beautify-input').value = renderMarkdown(state.conversation);
+  setBeautifyStatus('Loaded the extracted conversation. Pick a style and hit Beautify.');
+});
+$('dl-beautified').addEventListener('click', () => {
+  if (!state.beautified) return setBeautifyStatus('Beautify a document first.', true);
+  downloadBlob(new Blob([state.beautified.beautified], { type: 'text/markdown;charset=utf-8' }), 'chatvault-beautified.md');
+  setBeautifyStatus('✓ Beautified Markdown saved.');
+});
+$('copy-beautified').addEventListener('click', async () => {
+  if (!state.beautified) return setBeautifyStatus('Beautify a document first.', true);
+  try {
+    await navigator.clipboard.writeText(state.beautified.beautified);
+    setBeautifyStatus('✓ Beautified Markdown copied.');
+  } catch { setBeautifyStatus('Clipboard blocked — use the download instead.', true); }
+});

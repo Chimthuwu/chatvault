@@ -36,6 +36,7 @@
   </a>
   <nav>
     <a href="#exporter">Exporter</a>
+    <a href="#beautify">Beautify</a>
     <a href="#platforms">Platforms</a>
     <a href="https://github.com/Chimthuwu/chatvault" target="_blank" rel="noopener">GitHub ↗</a>
   </nav>
@@ -108,6 +109,40 @@
         <button data-export="zip" class="export-btn featured"><span>🗜️</span><strong>Everything ZIP</strong><small>md + pdf + html + json</small></button>
       </div>
       <button id="copy-btn" class="btn btn-ghost btn-small">Copy Markdown to clipboard</button>
+    </div>
+  </div>
+</section>
+
+<section id="beautify" class="wrap beautify-section">
+  <div class="section-head"><h2>Beautify &amp; Archive</h2><p>One click: clean presentation, preserved content, before/after preview, plus an Intelligence Report.</p></div>
+  <div class="tool-card">
+    <label for="beautify-input">Raw export — Markdown, plain text or JSON</label>
+    <textarea id="beautify-input" rows="8" placeholder="Paste a raw ChatGPT Markdown export, plain conversation text, or a JSON export here…" spellcheck="false"></textarea>
+    <div class="beautify-toolbar">
+      <button id="use-conversation" class="btn btn-ghost btn-small">Use extracted conversation ↑</button>
+      <label class="field">Style
+        <select id="beautify-style">
+          <option value="clean">Clean Markdown</option>
+          <option value="report" selected>Technical Report</option>
+          <option value="kb">Knowledge Base</option>
+          <option value="raw">Raw Archive</option>
+        </select>
+      </label>
+      <label class="check"><input type="checkbox" id="opt-toc" checked> Table of contents</label>
+      <label class="check"><input type="checkbox" id="opt-metadata" checked> Clean metadata</label>
+      <label class="check"><input type="checkbox" id="opt-report" checked> Intelligence Report</label>
+    </div>
+    <button id="beautify-btn" class="btn btn-primary btn-wide">✨ Beautify &amp; Archive</button>
+    <p id="beautify-status" class="status" role="status" aria-live="polite">Your original text is never rewritten — only the presentation changes.</p>
+
+    <div id="diff-view" class="diff hidden">
+      <div class="diff-head"><span>⬅ BEFORE <span id="before-stats" class="pill"></span></span><span>AFTER ➡ <span id="after-stats" class="pill"></span></span></div>
+      <div class="diff-grid"><pre id="before-md"></pre><pre id="after-md"></pre></div>
+      <div class="beautify-actions">
+        <button id="dl-beautified" class="btn btn-primary btn-small">↓ Beautified .md</button>
+        <button id="dl-archive" class="btn btn-ghost btn-small">🗜️ Full archive ZIP</button>
+        <button id="copy-beautified" class="btn btn-ghost btn-small">Copy Markdown</button>
+      </div>
     </div>
   </div>
 </section>

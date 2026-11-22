@@ -27,6 +27,7 @@
     #cv3-toolbar button:hover { background: #235548; }
     #cv3-toolbar button:disabled { opacity: .5; cursor: wait; }
     #cv3-toolbar #cv3-zip { background: #125747; border-color: #00dca5; }
+    #cv3-toolbar #cv3-beautify { background: #3b2a63; border-color: #b39cff; color: #e2d6ff; }
     #cv3-status {
       position: fixed; right: 20px; bottom: 76px; z-index: 2147483000;
       max-width: 380px; padding: 11px 15px; border-radius: 9px;
@@ -51,7 +52,10 @@
   }
 
   const buttons = {};
-  for (const [key, label] of [['md', '↓ MD'], ['pdf', '↓ PDF'], ['print', '🖨 PRINT'], ['html', '↓ HTML'], ['zip', '↓ ZIP']]) {
+  for (const [key, label] of [
+    ['beautify', '✨ BEAUTIFY'], ['md', '↓ MD'], ['pdf', '↓ PDF'],
+    ['print', '🖨 PRINT'], ['html', '↓ HTML'], ['zip', '↓ ZIP']
+  ]) {
     const button = document.createElement('button');
     button.id = 'cv3-' + key;
     button.textContent = label;
@@ -60,9 +64,33 @@
     toolbar.appendChild(button);
   }
 
+  async function beautifyCurrent() {
+    status('Beautifying conversation…');
+    const conv = await collectCurrentConversation();
+    const result = beautifyConversation(conv);
+    const base = slugify(conv.title);
+    const pdfConv = toConversation({
+      title: conv.title + ' (beautified)', source: conv.source,
+      messages: [{ role: 'assistant', content: result.variants.report }],
+      platform: conv.metadata?.platform, method: 'beautify'
+    });
+    const files = [
+      { name: base + '.original.md', data: result.original },
+      { name: base + '.clean.md', data: result.variants.clean },
+      { name: base + '.report.md', data: result.variants.report },
+      { name: base + '.knowledge-base.md', data: result.variants.kb },
+      { name: base + '.intelligence-report.md', data: result.intelligenceReport },
+      { name: base + '.editorial-prompt.md', data: result.editorialPrompt },
+      { name: base + '.beautified.pdf', data: await blobBytes(makePdf(pdfConv)) }
+    ];
+    downloadBlob(await makeZip(files), base + '-beautified.zip');
+    status(`✓ Beautified archive saved — ${files.length} files, original preserved.`);
+  }
+
   async function run(format) {
     Object.values(buttons).forEach(b => { b.disabled = true; });
     try {
+      if (format === 'beautify') return await beautifyCurrent();
       status('Extracting conversation…');
       const conv = await collectCurrentConversation();
       const base = slugify(conv.title);
@@ -110,5 +138,5 @@
   }
 
   for (const [key, button] of Object.entries(buttons)) button.addEventListener('click', () => run(key));
-  console.log(PREFIX, 'v3 ready — MD / PDF / PRINT / HTML / ZIP.');
+  console.log(PREFIX, 'v3 ready — BEAUTIFY / MD / PDF / PRINT / HTML / ZIP.');
 })();

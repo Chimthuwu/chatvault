@@ -98,6 +98,21 @@ code { background: #12342e; border: 1px solid #245047; border-radius: 5px; paddi
 .export-btn small { color: var(--muted); font-size: .74rem; }
 .export-btn.featured { border-color: var(--mint); background: #125747; }
 
+.beautify-section { padding-bottom: 8px; }
+.beautify-section textarea { min-height: 170px; }
+.beautify-toolbar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 14px 0 4px; }
+.beautify-toolbar .field { display: inline-flex; align-items: center; gap: 8px; margin: 0; color: var(--muted); font-size: .85rem; }
+.beautify-toolbar select { background: #0b201d; border: 1px solid #345f56; border-radius: 8px; color: var(--text); padding: 8px 10px; font: 600 .85rem system-ui; }
+.beautify-toolbar .check { display: inline-flex; align-items: center; gap: 6px; margin: 0; color: var(--muted); font-size: .82rem; cursor: pointer; }
+.beautify-toolbar input[type="checkbox"] { accent-color: #00dca5; width: 16px; height: 16px; }
+.diff { margin-top: 22px; border-top: 1px solid var(--line); padding-top: 18px; }
+.diff-head { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 10px; font-size: .82rem; color: var(--muted); }
+.diff-head .pill { margin-left: 8px; font-size: .7rem; padding: 3px 9px; }
+.diff-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.diff pre { height: 380px; overflow: auto; margin: 0; background: #081a18; border: 1px solid var(--line); border-radius: 10px; padding: 14px; font: 12px/1.6 ui-monospace, Consolas, monospace; color: #c9e8df; white-space: pre-wrap; overflow-wrap: anywhere; }
+.beautify-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
+
+.platforms { padding-top: 56px; }
 .platform-grid { grid-template-columns: repeat(4, 1fr); }
 .platform { display: flex; align-items: center; gap: 10px; background: rgba(15, 45, 40, .65); border: 1px solid var(--line); border-radius: 12px; padding: 14px; }
 .platform span { font-size: 1.2rem; color: var(--mint); width: 26px; text-align: center; }
@@ -107,7 +122,7 @@ code { background: #12342e; border: 1px solid #245047; border-radius: 5px; paddi
 
 .footer { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px; border-top: 1px solid var(--line); padding: 24px 0 40px; color: #7fa198; font-size: .84rem; }
 :focus-visible { outline: 2px solid var(--mint); outline-offset: 2px; }
-@media (max-width: 860px) { .features, .platform-grid { grid-template-columns: repeat(2, 1fr); } .steps { grid-template-columns: 1fr; } }
+@media (max-width: 860px) { .features, .platform-grid { grid-template-columns: repeat(2, 1fr); } .steps { grid-template-columns: 1fr; } .diff-grid, .diff-head { grid-template-columns: 1fr; } .diff pre { height: 260px; } }
 @media (max-width: 560px) {
   .features, .platform-grid, .export-grid { grid-template-columns: 1fr; }
   .site-header nav { gap: 12px; font-size: .8rem; }

@@ -1,5 +1,6 @@
 // ChatVault Worker — small, predictable API. No storage, no credentials, no content logging.
 import { PLATFORMS, renderMarkdown, renderHtml, validateConversation } from '../../site/core.js';
+import { beautifyMarkdown, buildIntelligenceReport, buildEditorialPrompt } from '../../site/beautify.js';
 import { validateShareUrl, safeRedirect, UrlError } from './security.js';
 import { extractConversation, ExtractError } from './extract.js';
 
@@ -100,6 +101,21 @@ export default {
         const html = await fetchSharePage(canonical);
         const conversation = extractConversation(html, canonical.toString(), platform.id);
         return json({ success: true, conversation, warnings: conversation.metadata.warnings });
+      }
+      if (url.pathname === '/api/beautify' && request.method === 'POST') {
+        const body = await readBody(request);
+        if (typeof body.markdown !== 'string' || body.markdown.length > MAX_BODY) {
+          throw new UrlError('Send a `markdown` string in the request body.');
+        }
+        const style = ['clean', 'report', 'kb', 'raw'].includes(body.style) ? body.style : 'report';
+        const beautified = beautifyMarkdown(body.markdown, { style, metadata: body.metadata || {} });
+        return json({
+          success: true,
+          style,
+          beautified,
+          intelligenceReport: body.report ? buildIntelligenceReport(body.markdown) : null,
+          editorialPrompt: body.prompt ? buildEditorialPrompt(body.markdown) : null
+        });
       }
       const exportMatch = url.pathname.match(/^\/api\/export\/(markdown|html|json)$/);
       if (exportMatch && request.method === 'POST') {

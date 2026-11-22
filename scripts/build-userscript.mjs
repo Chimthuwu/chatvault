@@ -7,6 +7,7 @@ const parts = [
   'templates/userscript-header.js',
   'site/core.js',
   'site/archive.js',
+  'site/beautify.js',
   'site/extract-browser.js',
   'userscripts/chatvault-main.js'
 ];

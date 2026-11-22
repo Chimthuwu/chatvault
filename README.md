@@ -16,7 +16,7 @@
 One-click export for ChatGPT, Claude, Gemini, Grok, DeepSeek, Perplexity and Copilot — to Markdown, PDF, HTML and ZIP. No account, no API key, no external conversion service.
 
 [![Live demo](https://img.shields.io/badge/🌐-Live%20demo-00dca5?style=for-the-badge)](https://chatvault.nyan-anonymous-d45.workers.dev)
-[![Tests](https://img.shields.io/badge/tests-16%20passing-brightgreen?style=for-the-badge)](tests/)
+[![Tests](https://img.shields.io/badge/tests-25%20passing-brightgreen?style=for-the-badge)](tests/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue?style=for-the-badge)](LICENSE)
 [![Version](https://img.shields.io/badge/version-3.0.0-9f6?style=for-the-badge)](package.json)
 
@@ -47,11 +47,11 @@ Paste a public share URL, a platform JSON export, or a plain transcript (`You: �
 
 ### 2. Tampermonkey userscript
 
-Grab [`userscripts/chatvault.user.js`](userscripts/chatvault.user.js), create a new Tampermonkey script, paste the whole file, save, and refresh your chat tab. A small `MD / PDF / PRINT / HTML / ZIP` toolbar appears in the corner.
+Grab [`userscripts/chatvault.user.js`](userscripts/chatvault.user.js), create a new Tampermonkey script, paste the whole file, save, and refresh your chat tab. A small `BEAUTIFY / MD / PDF / PRINT / HTML / ZIP` toolbar appears in the corner. `BEAUTIFY` saves a ZIP with the original transcript, four presentation styles, the Intelligence Report, the editorial prompt and a PDF.
 
 For ChatGPT it first reads the structured backend conversation (the path that successfully exported a full 12-message thread), then falls back to rendered DOM. Every other platform uses layered DOM selectors plus a generic alternating-role fallback.
 
-> The userscript is generated — edit `site/core.js`, `site/archive.js`, `site/extract-browser.js` or `userscripts/chatvault-main.js`, then run `npm run build:userscript`. Never hand-edit the `.user.js` file.
+> The userscript is generated — edit `site/core.js`, `site/archive.js`, `site/beautify.js`, `site/extract-browser.js` or `userscripts/chatvault-main.js`, then run `npm run build:userscript`. Never hand-edit the `.user.js` file.
 
 ### 3. Hermes skill + CLI
 
@@ -63,6 +63,27 @@ node scripts/cli.mjs --input examples/sample-conversation.json --out ./my-chat
 ```
 
 The CLI also reads ChatGPT `conversations.json`, Claude `chat_messages`, and generic `[{ "role": "user", "content": "…" }]` arrays.
+
+## Phase 2 — Beautify & Archive
+
+The **Refining Exported Contents** feature set turns an export into a readable archive without rewriting it. Two layers, one rule: **presentation changes, content never does**.
+
+- **Protected content manager** — fenced blocks and inline code are extracted into collision-safe placeholders before any normalization, then restored byte-for-byte. Headings *inside* code never appear in the table of contents.
+- **Normalization pipeline** — setext/ATX heading levels, whitespace, decorative separators, list markers, table rows, bare URLs, ISO timestamps.
+- **Four document styles** — `clean` (portable Markdown), `report` (metadata header + TOC), `kb` (at-a-glance summaries + references), `raw` (untouched original).
+- **Live before/after preview** in the web app, with per-feature checkboxes and one-click archive download.
+- **01 — Original Conversation** and **02 — Intelligence Report** in the same ZIP: the report is extractive (decisions, unfinished work, actions, files/repos, code references) and says so explicitly — no invented facts.
+- **Editorial prompt** — a ready-to-paste prompt for an optional AI enhancement stage, kept separate from the faithful archive.
+
+```bash
+node scripts/cli.mjs beautify --input examples/sample-conversation.json --out ./beautified --style report
+# → beautified/original.md, report.md, intelligence-report.md,
+#   editorial-prompt.md, beautified.pdf, beautified.zip
+```
+
+The same pipeline runs in the userscript (`✨ BEAUTIFY` button), the web app, the Worker's `/api/beautify` endpoint and the CLI. All share [`site/beautify.js`](site/beautify.js), so output is identical everywhere.
+
+AI enhancement is deliberately **opt-in**: ChatVault never sends a conversation to a model on its own. The browser does all formatting locally, and the editorial prompt is a file you choose to use.
 
 ## Platform support
 
@@ -106,13 +127,14 @@ The shared model and exporters live in [`site/core.js`](site/core.js) and [`site
 | `/api/export/markdown` | POST `{conversation}` | Markdown file |
 | `/api/export/html` | POST `{conversation}` | HTML file |
 | `/api/export/json` | POST `{conversation}` | JSON file |
+| `/api/beautify` | POST `{markdown, style?, report?, prompt?}` | Beautified Markdown + optional extractive report/editorial prompt |
 
 Only https public share URLs on the allowlisted hosts are fetched. Private `/c/` links, credentials in URLs, redirects off-host and oversized bodies are rejected.
 
 ## Development
 
 ```bash
-npm test                 # builds the userscript + runs 16 node:test checks
+npm test                 # builds the userscript + runs 25 node:test checks
 npm run dev              # wrangler dev (local Worker + site)
 npm run deploy           # wrangler deploy
 npm run build:og         # regenerate the 1200x630 embed image (Pillow)
@@ -130,7 +152,7 @@ npm run cli -- --help    # local conversion CLI
 ## Layout
 
 ```
-site/                 static web app + shared core/archive/extract modules
+site/                 static web app + shared core/archive/beautify/extract modules
 src/worker/           Cloudflare Worker API
 userscripts/          generated self-contained userscript
 templates/            userscript metadata header
