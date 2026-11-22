@@ -3,7 +3,6 @@
   "name": "chatvault",
   "main": "src/worker/index.js",
   "compatibility_date": "2026-11-20",
-  "pages_build_output_dir": "./site",
   "assets": {
     "directory": "./site",
     "run_worker_first": ["/api/*"]
