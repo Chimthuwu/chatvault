@@ -10,6 +10,7 @@
     "build:og": "python3 scripts/generate-og-image.py",
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
+    "deploy:pages": "wrangler pages deploy site --project-name=chat-vault --branch=main",
     "cli": "node scripts/cli.mjs"
   },
   "devDependencies": {

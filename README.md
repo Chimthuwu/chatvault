@@ -41,7 +41,9 @@ Chat conversations vanish behind logins, UI redesigns and broken "copy" buttons.
 
 ### 1. Web app (no install)
 
-👉 **https://chatvault.nyan-anonymous-d45.workers.dev**
+👉 **https://chatvault.nyan-anonymous-d45.workers.dev** (canonical) · mirror: **https://chat-vault.pages.dev**
+
+Both serve the same app. The Pages mirror keeps its static files on Pages and forwards `/api/*` to the Worker via [`functions/api/[[path]].js`](functions/api/[[path]].js), so exports and beautification work identically on either URL.
 
 Paste a public share URL, a platform JSON export, or a plain transcript (`You: …` / `Assistant: …`). Pick a download. JSON and text modes never leave your browser; only public share URLs go through the Worker.
 
@@ -136,7 +138,8 @@ Only https public share URLs on the allowlisted hosts are fetched. Private `/c/`
 ```bash
 npm test                 # builds the userscript + runs 25 node:test checks
 npm run dev              # wrangler dev (local Worker + site)
-npm run deploy           # wrangler deploy
+npm run deploy           # wrangler deploy (Worker + canonical domain)
+npm run deploy:pages     # pages mirror at chat-vault.pages.dev
 npm run build:og         # regenerate the 1200x630 embed image (Pillow)
 npm run cli -- --help    # local conversion CLI
 ```
@@ -154,6 +157,7 @@ npm run cli -- --help    # local conversion CLI
 ```
 site/                 static web app + shared core/archive/beautify/extract modules
 src/worker/           Cloudflare Worker API
+functions/            Pages mirror API proxy
 userscripts/          generated self-contained userscript
 templates/            userscript metadata header
 scripts/              build, CLI, OG-image generator
