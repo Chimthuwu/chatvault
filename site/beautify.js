@@ -394,7 +394,7 @@ function extractHandoffLines(text) {
     if (CONSTRAINT_RE.test(line)) add('constraints', line, source);
     if (STATUS_RE.test(line)) add('status', line, source);
     if (QUESTION_RE.test(line) || /\b(waiting for|depends on|if we|unless)\b/i.test(line)) add('open', line, source);
-    if (/^(?:next(?: step)?s?:|todo:|then\\b|implement\\b|add\\b|fix\\b|update\\b|build\\b|create\\b|test\\b|verify\\b|wire\\b|remove\\b|replace\\b)/i.test(line) || /\\b(next step|action item|follow[- ]?up)\\b/i.test(line)) add('actions', line, source);
+    if (/^(?:next(?: step)?s?:|todo:|then\b|implement\b|add\b|fix\b|update\b|build\b|create\b|test\b|verify\b|wire\b|remove\b|replace\b)/i.test(line) || /\b(next step|action item|follow[- ]?up)\b/i.test(line)) add('actions', line, source);
   }
   return buckets;
 }
