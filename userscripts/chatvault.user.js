@@ -4,8 +4,11 @@
 // ==UserScript==
 // @name         ChatVault — Export any LLM chat (MD / PDF / ZIP)
 // @namespace    https://github.com/Chimthuwu/chatvault
-// @version      3.0.0
-// @description  Export ChatGPT, Claude, Gemini, Grok, DeepSeek and other chats to Markdown, PDF, HTML or ZIP. Local, no API key.
+// @version      3.1.0
+// @description  Export chats and return normalized JSON to ChatVault from supported share pages.
+// @grant        GM_getValue
+// @grant        GM_setValue
+// @grant        GM_addValueChangeListener
 // @match        https://chatgpt.com/*
 // @match        https://chat.openai.com/*
 // @match        https://claude.ai/*
@@ -17,7 +20,8 @@
 // @match        https://www.perplexity.ai/*
 // @match        https://copilot.microsoft.com/*
 // @match        https://www.bing.com/chat/*
-// @grant        none
+// @match        https://chat-vault.pages.dev/*
+// @match        https://chatvault.nyan-anonymous-d45.workers.dev/*
 // @noframes
 // @run-at       document-idle
 // ==/UserScript==
@@ -1231,11 +1235,106 @@ async function collectCurrentConversation() {
   'use strict';
   if (window.__chatVaultV3Loaded) return;
 
+  window.__chatVaultV3Loaded = true;
   const host = location.hostname.toLowerCase();
+  const APP_ORIGINS = new Set([
+    'https://chat-vault.pages.dev',
+    'https://chatvault.nyan-anonymous-d45.workers.dev'
+  ]);
+  const REQUEST_KEY = 'chatvault:browser-extract-request';
+  const RESULT_KEY = 'chatvault:browser-extract-result';
+
+  // ChatVault tab: receive page requests and relay provider results.
+  if (APP_ORIGINS.has(location.origin)) {
+    if (typeof GM_addValueChangeListener !== 'function' || typeof GM_setValue !== 'function') {
+      console.warn('[ChatVault] Browser JSON handoff requires Tampermonkey GM storage permissions.');
+      return;
+    }
+    GM_addValueChangeListener(RESULT_KEY, (_key, _oldValue, result) => {
+      if (!result || !result.token) return;
+      window.postMessage(Object.assign({ type: 'chatvault:browser-extract-result' }, result), location.origin);
+      Promise.resolve(GM_setValue(RESULT_KEY, null)).catch(error =>
+        console.warn('[ChatVault] Could not clear transfer result:', error));
+    });
+    window.addEventListener('message', event => {
+      if (event.source !== window || event.origin !== location.origin) return;
+      const request = event.data;
+      if (!request || request.type !== 'chatvault:browser-extract-request' ||
+          typeof request.token !== 'string' || typeof request.url !== 'string') return;
+      let target;
+      try { target = new URL(request.url); } catch { return; }
+      const platform = platformForHost(target.hostname);
+      if (target.protocol !== 'https:' || target.username || target.password ||
+          (target.port && target.port !== '443') || !platform ||
+          !platform.share.test(target.pathname)) return;
+      Promise.resolve(GM_setValue(REQUEST_KEY, {
+        token: request.token, url: target.href, expiresAt: Date.now() + 90000
+      })).catch(error => console.warn('[ChatVault] Could not queue extraction:', error));
+    });
+    return;
+  }
+
   if (host === 'x.com' && !/grok/i.test(location.pathname)) return;
   if (host.endsWith('bing.com') && !/chat/i.test(location.pathname)) return;
 
-  window.__chatVaultV3Loaded = true;
+  // Provider tab: match the requested public share and return a normalized conversation.
+  if (typeof GM_addValueChangeListener === 'function' &&
+      typeof GM_getValue === 'function' && typeof GM_setValue === 'function') {
+    const processingRequests = new Set();
+    async function processBrowserRequest(request) {
+      if (!request || !request.token || !request.url ||
+          Number(request.expiresAt) < Date.now() || processingRequests.has(request.token)) return;
+      let target;
+      try { target = new URL(request.url); } catch { return; }
+      const requestedPlatform = platformForHost(target.hostname);
+      const pagePlatform = detectPagePlatform();
+      const requestedId = target.pathname.split('/').filter(Boolean).pop();
+      const pageId = location.pathname.split('/').filter(Boolean).pop();
+      if (!requestedPlatform || requestedPlatform.id !== pagePlatform.id ||
+          !requestedPlatform.share.test(target.pathname) || !requestedId || requestedId !== pageId) return;
+
+      processingRequests.add(request.token);
+      let conversation = null;
+      let lastError = null;
+      try {
+        await new Promise(resolve => setTimeout(resolve, 900));
+        for (let attempt = 0; attempt < 8; attempt++) {
+          try {
+            const candidate = await collectCurrentConversation();
+            if (candidate && Array.isArray(candidate.messages) && candidate.messages.length) {
+              conversation = candidate;
+              break;
+            }
+          } catch (error) { lastError = error; }
+          if (attempt < 7) await new Promise(resolve => setTimeout(resolve, 850));
+        }
+        const result = conversation
+          ? { token: request.token, success: true, conversation: conversation, sourceUrl: location.href }
+          : { token: request.token, success: false, error: lastError && lastError.message || 'No conversation messages were found on the share page.' };
+        const serialized = JSON.stringify(result);
+        if (serialized.length > 3000000) {
+          result.success = false;
+          result.conversation = null;
+          result.error = 'This conversation is too large for the automatic browser handoff. Use the userscript ZIP export and import its JSON file instead.';
+        }
+        await Promise.resolve(GM_setValue(RESULT_KEY, result));
+      } catch (error) {
+        await Promise.resolve(GM_setValue(RESULT_KEY, {
+          token: request.token, success: false,
+          error: error && error.message || 'Browser extraction failed.'
+        })).catch(() => {});
+      } finally {
+        processingRequests.delete(request.token);
+        await Promise.resolve(GM_setValue(REQUEST_KEY, null)).catch(() => {});
+      }
+    }
+    GM_addValueChangeListener(REQUEST_KEY, (_key, _oldValue, request) => {
+      if (request) processBrowserRequest(request);
+    });
+    Promise.resolve(GM_getValue(REQUEST_KEY)).then(request => {
+      if (request) processBrowserRequest(request);
+    }).catch(error => console.warn('[ChatVault] Could not read extraction request:', error));
+  }
   const PREFIX = '[ChatVault]';
 
   const style = document.createElement('style');
