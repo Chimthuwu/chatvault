@@ -287,3 +287,6 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 .archive-state.linked { color: #a9d887; }
 .archive-state.missing { color: #e2b878; }
 .archive-parent-link { display: inline-block; margin: 8px 0 0 24px; color: var(--acid); font-size: 9px; }
+
+.archive-export { margin: 8px 0 0 24px; min-height: 27px; padding: 0 9px; border: 1px solid #526d3d; border-radius: 6px; background: #253321; color: var(--acid); font-size: 8px; font-weight: 750; cursor: pointer; }
+.archive-export:hover { border-color: #9ac66b; background: #2d3d27; }
