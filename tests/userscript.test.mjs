@@ -12,7 +12,7 @@ test('generated userscript is self-contained and parses', () => {
   const source = readFileSync(file, 'utf8');
   assert.match(source, /\/\/ ==UserScript==/);
   assert.match(source, /@version\s+3.2.0/);
-  for (const host of ['chatgpt.com', 'claude.ai', 'gemini.google.com', 'grok.com', 'chat.deepseek.com', 'perplexity.ai', 'copilot.microsoft.com']) {
+  for (const host of ['chatgpt.com', 'claude.ai', 'gemini.google.com', 'g.co', 'grok.com', 'chat.deepseek.com', 'perplexity.ai', 'copilot.microsoft.com']) {
     assert.ok(source.includes(host), `missing @match host: ${host}`);
   }
   assert.doesNotMatch(source, /^export\s+/m);
