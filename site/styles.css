@@ -259,3 +259,12 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 @media (prefers-reduced-motion: reduce) {
   *,*::before,*::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
 }
+/* Import recovery for platforms that block server-side share retrieval. */
+.resolver-fallback { margin-top: 14px; padding: 15px 16px; border: 1px solid #66563a; border-radius: 9px; background: #282318; color: #e4d8bd; }
+.fallback-title { color: #f2d59b; font-size: 11px; font-weight: 800; }
+.resolver-fallback p { margin: 7px 0; color: #b8ad96; font-size: 10px; line-height: 1.6; }
+.resolver-fallback ol { margin: 8px 0 13px; padding-left: 19px; color: #cfc4ad; font-size: 10px; line-height: 1.8; }
+.resolver-fallback a { color: var(--acid); text-decoration: underline; text-underline-offset: 2px; }
+.resolver-fallback code { color: #f0e0b9; }
+.file-import { display: flex; align-items: center; gap: 10px; margin: 0 0 9px; color: #9eaa96; font-size: 10px; }
+.file-import input { max-width: 100%; color: #b9c4b0; font: 10px system-ui,sans-serif; }
