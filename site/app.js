@@ -7,7 +7,7 @@ import { makeZip, makePdf, blobBytes } from './archive.js';
 import { beautifyMarkdown, buildIntelligenceReport, buildEditorialPrompt, buildAgentHandoff, detectInputType } from './beautify.js';
 
 const $ = id => document.getElementById(id);
-const state = { conversation: null, beautified: null, mode: 'url' };
+const state = { conversation: null, beautified: null, mode: 'url', browserResolver: null };
 
 function setStatus(message, error = false) {
   const el = $('status');
@@ -20,6 +20,34 @@ function setBusy(busy) {
 }
 function showResolverFallback(show) {
   $('resolver-fallback').classList.toggle('hidden', !show);
+}
+
+function relayBrowserResult(result) {
+  if (!result || !state.browserResolver || result.token !== state.browserResolver.token) return;
+  if (state.browserResolver.timeout) window.clearTimeout(state.browserResolver.timeout);
+  state.browserResolver = null;
+  if (!result.success || !result.conversation || !Array.isArray(result.conversation.messages) || !result.conversation.messages.length) {
+    setStatus(result.error || 'The userscript could not read messages from that share page.', true);
+    showResolverFallback(true);
+    return;
+  }
+  loadConversation(result.conversation);
+  showResolverFallback(false);
+  setStatus('✓ ' + result.conversation.messages.length + ' messages returned to ChatVault in the same tab.');
+}
+window.addEventListener('message', event => {
+  if (event.origin !== window.location.origin || !event.data) return;
+  if (event.data.type === 'chatvault:browser-extract-result') relayBrowserResult(event.data);
+  if (event.data.type === 'chatvault:browser-extract-started' &&
+      state.browserResolver && event.data.token === state.browserResolver.token) {
+    setStatus('Opening the share page in this tab. ChatVault will return automatically after extraction…');
+    window.location.assign(state.browserResolver.targetUrl);
+  }
+});
+const returnedToken = new URLSearchParams(location.hash.slice(1)).get('cv-return');
+if (returnedToken) {
+  state.browserResolver = { token: returnedToken };
+  history.replaceState(null, '', location.pathname + location.search);
 }
 function setMode(mode) {
   state.mode = mode;
@@ -80,49 +108,25 @@ function startBrowserExtraction() {
     return;
   }
 
-  // Open synchronously from the click handler so popup blockers allow it.
-  const popup = window.open(target.href, '_blank');
-  if (!popup) {
-    setStatus('Your browser blocked the share tab. Allow pop-ups for ChatVault, then try again.', true);
-    return;
-  }
-
   const token = globalThis.crypto && crypto.randomUUID
     ? crypto.randomUUID()
     : 'cv-' + Date.now() + '-' + Math.random().toString(36).slice(2);
-  let timeout = null;
-  const cleanup = () => {
-    if (timeout !== null) window.clearTimeout(timeout);
-    window.removeEventListener('message', onMessage);
-    state.browserResolver = null;
-  };
-  const onMessage = event => {
-    if (event.origin !== window.location.origin) return;
-    const result = event.data;
-    if (!result || result.type !== 'chatvault:browser-extract-result' || result.token !== token) return;
-    if (!result.success || !result.conversation || !Array.isArray(result.conversation.messages) || !result.conversation.messages.length) {
-      cleanup();
-      setStatus(result.error || 'The userscript could not read messages from that share page.', true);
+  const returnUrl = location.origin + location.pathname + location.search + '#cv-return=' + encodeURIComponent(token);
+  state.browserResolver = {
+    token,
+    targetUrl: target.href,
+    timeout: window.setTimeout(() => {
+      state.browserResolver = null;
+      setStatus('The browser handoff timed out. Check that the updated userscript is installed and try again.', true);
       showResolverFallback(true);
-      return;
-    }
-    cleanup();
-    try { popup.close(); } catch { /* The browser may have detached the tab. */ }
-    loadConversation(result.conversation);
-    showResolverFallback(false);
-    setStatus('✓ ' + result.conversation.messages.length + ' messages returned as ChatVault JSON from the browser tab.');
+    }, 120000)
   };
-
-  window.addEventListener('message', onMessage);
-  state.browserResolver = { token: token, popup: popup };
-  setStatus('Temporary share tab opened. ChatVault will close it automatically when extraction finishes…');
-  timeout = window.setTimeout(() => {
-    cleanup();
-    setStatus('No JSON came back. Check that the updated ChatVault userscript is installed and that the share page finished loading.', true);
-    showResolverFallback(true);
-  }, 60000);
+  setStatus('Preparing same-tab browser extraction…');
   window.postMessage({
-    type: 'chatvault:browser-extract-request', token: token, url: target.href
+    type: 'chatvault:browser-extract-request',
+    token,
+    url: target.href,
+    returnUrl
   }, window.location.origin);
 }
 async function extract() {
