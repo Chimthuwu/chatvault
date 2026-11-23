@@ -25,7 +25,7 @@
         console.warn('[ChatVault] Could not clear transfer result:', error));
     });
     window.addEventListener('message', event => {
-      if (event.source !== window || event.origin !== location.origin) return;
+      if (event.origin !== location.origin) return;
       const request = event.data;
       if (!request || request.type !== 'chatvault:browser-extract-request' ||
           typeof request.token !== 'string' || typeof request.url !== 'string') return;
