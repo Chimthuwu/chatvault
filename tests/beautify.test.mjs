@@ -148,7 +148,7 @@ test('agent handoff separates decisions, constraints, proposals and open questio
     'TODO: verify the ZIP export in Firefox?',
     'The archive is currently stored in localStorage.',
     'Update site/app.js and tests/beautify.test.mjs next.'
-  ].join('\\n');
+  ].join('\n');
   const handoff = buildAgentHandoff(source);
   assert.match(handoff, /Confirmed decisions/);
   assert.match(handoff, /decided to use local browser storage/);
@@ -158,7 +158,7 @@ test('agent handoff separates decisions, constraints, proposals and open questio
   assert.match(handoff, /could add an optional agent bundle/);
   assert.match(handoff, /Open questions, dependencies & blockers/);
   assert.match(handoff, /verify the ZIP export in Firefox/);
-  assert.match(handoff, /site\\/app\\.js/);
+  assert.ok(handoff.includes('site/app.js'));
   assert.match(handoff, /Treat proposals as unapproved/);
   assert.match(handoff, /Acceptance criteria/);
 });
