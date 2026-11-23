@@ -360,6 +360,95 @@ export function beautifyConversation(conv, options = {}) {
   };
 }
 
+
+const PROPOSED_RE = /\b(propose|proposed|suggest|suggested|could|might|maybe|consider|option|idea|would be nice|possibly)\b/i;
+const CONSTRAINT_RE = /\b(must|must not|never|only|requires?|requirement|constraint|keep|preserve|avoid|do not|don't|cannot|can't)\b/i;
+const STATUS_RE = /\b(already|currently|implemented|working|completed|done|built|deployed|verified|tested|existing|supports?)\b/i;
+const QUESTION_RE = /\?|\b(unknown|unclear|not sure|needs? confirmation|open question|pending|blocked|TODO|TBD|not decided|not yet)\b/i;
+
+function extractHandoffLines(text) {
+  let section = 'Conversation';
+  const buckets = { decisions: [], proposed: [], constraints: [], status: [], open: [], actions: [] };
+  const seen = new Set();
+  const add = (key, value, source) => {
+    const clean = stripMd(value).replace(/\s+/g, ' ').trim();
+    if (clean.length < 8 || clean.length > 420) return;
+    const id = key + ':' + clean.toLowerCase();
+    if (seen.has(id)) return;
+    seen.add(id);
+    buckets[key].push({ value: clean, source });
+  };
+  for (const [index, raw] of String(text).split('\n').entries()) {
+    const heading = raw.match(/^#{1,3}\s+(.+)$/);
+    if (heading) { section = stripMd(heading[1]); continue; }
+    if (!raw.trim() || /^\s*(?:>\s*|[-*+]\s+|\d+[.)]\s+)/.test(raw)) continue;
+    if (/^\s*~~~/.test(raw)) continue;
+    const line = raw.trim();
+    const source = section === 'Conversation' ? 'line ' + (index + 1) : section;
+    if (DECISION_RE.test(line) && !PROPOSED_RE.test(line)) add('decisions', line, source);
+    if (PROPOSED_RE.test(line)) add('proposed', line, source);
+    if (CONSTRAINT_RE.test(line)) add('constraints', line, source);
+    if (STATUS_RE.test(line)) add('status', line, source);
+    if (QUESTION_RE.test(line) || /\b(waiting for|depends on|if we|unless)\b/i.test(line)) add('open', line, source);
+    if (NEXT_RE.test(line) || /\b(next|then|implement|add|fix|update|build|create|test|verify)\b/i.test(line)) add('actions', line, source);
+  }
+  return buckets;
+}
+
+export function buildAgentHandoff(input, titleHint = '') {
+  const text = typeof input === 'string' ? input : renderMarkdown(input);
+  const title = titleHint || (typeof input === 'string'
+    ? (text.match(/^#\s+(.+)$/m)?.[1] || 'Conversation handoff')
+    : (input.title || 'Conversation handoff'));
+  const buckets = extractHandoffLines(text);
+  const render = (heading, items) => {
+    const lines = items.slice(0, 10).map(item => '- ' + item.value + ' _(source: ' + item.source + ')_');
+    return '## ' + heading + '\n\n' + (lines.length ? lines.join('\n') : '_No explicit items detected. Check the source transcript before assuming none exist._') + '\n';
+  };
+  const files = [...new Set(text.match(FILE_RE) || [])];
+  const repos = [...new Set(text.match(REPO_RE) || [])];
+  return [
+    '# Agent Handoff — ' + stripMd(title),
+    '',
+    '> Generated locally by ChatVault using extractive rules. This is a briefing aid, not an authoritative interpretation.',
+    '> Verify every item against the source transcript. The generator does not infer implementation status or resolve contradictions.',
+    '',
+    '## Objective & context',
+    '',
+    'Use the source conversation as the authority for the task, project context and terminology. The extracted items below are leads, not replacements for reading relevant source passages.',
+    '',
+    render('Confirmed decisions (explicit language)', buckets.decisions),
+    render('Requirements & constraints (detected wording)', buckets.constraints),
+    render('Current state / progress (detected wording)', buckets.status),
+    render('Proposals & ideas (not automatically approved)', buckets.proposed),
+    render('Open questions, dependencies & blockers', buckets.open),
+    render('Potential next actions (extracted, not prioritised)', buckets.actions),
+    '## Relevant files & repositories',
+    '',
+    files.length || repos.length
+      ? [...files.map(file => '- ' + file), ...repos.map(repo => '- ' + repo)].join('\n')
+      : '_No file paths or repository URLs detected._',
+    '',
+    '## Agent instructions',
+    '',
+    '- Read the relevant source conversation sections before making changes; use the full cleaned transcript when context or exact wording matters.',
+    '- Inspect the current repository state and existing documentation before editing. Do not assume this handoff describes the latest code.',
+    '- Preserve existing user changes. Do not reset, clean, overwrite, or discard unrelated work.',
+    '- Treat proposals as unapproved unless the conversation explicitly confirms them.',
+    '- Do not invent missing requirements, file paths, implementation status, or acceptance criteria. Ask only when a consequential ambiguity blocks safe progress.',
+    '- Make the smallest coherent change, run focused tests, then report what changed, what was actually verified, and what remains unverified.',
+    '',
+    '## Acceptance criteria',
+    '',
+    '_Not inferred. Derive these from explicit requirements in the source conversation and confirm any missing or conflicting criteria before declaring the task complete._',
+    '',
+    '## Source of truth',
+    '',
+    'Attach or provide the matching clean.md (or original transcript) alongside this handoff when the agent needs full chronology, exact examples, code snippets, or disputed context.',
+    ''
+  ].join('\n');
+}
+
 // ---------- extractive intelligence report (no invention, no network) ----------
 
 const DECISION_RE = /\b(decided|decision|agreed|chose|approved|rejected|dropped|we will|going with|final choice)\b/i;
