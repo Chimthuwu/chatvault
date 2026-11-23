@@ -100,14 +100,17 @@
               <p id="status" class="status" role="status" aria-live="polite">Ready when you are. Your archive starts here.</p>
               <div id="resolver-fallback" class="resolver-fallback hidden" role="note">
                 <div class="fallback-title">This platform blocked server-side retrieval.</div>
-                <p>That share page won't allow ChatVault's server to fetch it. Extract it from the page in your browser instead:</p>
+                <p>Try browser-side extraction: the userscript reads the share page and returns normalized JSON directly to this tab. Install the userscript first if you haven't already.</p>
                 <ol>
-                  <li>Install <a href="https://www.tampermonkey.net/" target="_blank" rel="noopener noreferrer">Tampermonkey</a> if you haven't already.</li>
-                  <li>Install the <a href="https://raw.githubusercontent.com/Chimthuwu/chatvault/main/userscripts/chatvault.user.js" target="_blank" rel="noopener noreferrer">ChatVault browser userscript</a>.</li>
-                  <li>Open the conversation on its original platform and click <strong>ZIP</strong> in the ChatVault toolbar.</li>
-                  <li>Unzip the download, then import its <code>.json</code> file here.</li>
+                  <li>Install <a href="https://www.tampermonkey.net/" target="_blank" rel="noopener noreferrer">Tampermonkey</a>.</li>
+                  <li>Install or update the <a href="https://raw.githubusercontent.com/Chimthuwu/chatvault/main/userscripts/chatvault.user.js" target="_blank" rel="noopener noreferrer">ChatVault browser userscript</a>.</li>
+                  <li>Click the browser extraction button and keep both tabs open while the share loads.</li>
+                  <li>If automatic handoff is unavailable, use the userscript <strong>ZIP</strong> button and import the <code>.json</code> inside.</li>
                 </ol>
-                <button id="fallback-json" class="btn btn-subtle btn-small" type="button">Import the JSON file instead →</button>
+                <div class="fallback-actions">
+                  <button id="fallback-browser" class="btn btn-primary btn-small" type="button">Open share &amp; return JSON →</button>
+                  <button id="fallback-json" class="btn btn-subtle btn-small" type="button">Import JSON manually</button>
+                </div>
               </div>
             </div>
 
