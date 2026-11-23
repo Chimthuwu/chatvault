@@ -1,7 +1,7 @@
 // ChatVault web app — all conversions happen locally; only /api/resolve touches the network.
 import {
   toConversation, parseImport, renderMarkdown, renderHtml, platformForHost,
-  downloadBlob, messageToText, roleLabel, slugify, openPrintWindow
+  downloadBlob, messageToText, roleLabel, slugify, openPrintWindow, extractContinuationReference
 } from './core.js';
 import { makeZip, makePdf, blobBytes } from './archive.js';
 import { beautifyMarkdown, buildIntelligenceReport, buildEditorialPrompt, detectInputType } from './beautify.js';
@@ -115,7 +115,7 @@ function startBrowserExtraction() {
 
   window.addEventListener('message', onMessage);
   state.browserResolver = { token: token, popup: popup };
-  setStatus('Waiting for the ChatVault userscript to read the share page and return JSON…');
+  setStatus('Temporary share tab opened. ChatVault will close it automatically when extraction finishes…');
   timeout = window.setTimeout(() => {
     cleanup();
     setStatus('No JSON came back. Check that the updated ChatVault userscript is installed and that the share page finished loading.', true);
@@ -171,20 +171,6 @@ async function extract() {
 }
 
 
-function continuationReference(conv) {
-  const opening = (conv.messages || []).slice(0, 5).map(messageToText).join("\n");
-  const match = opening.match(/Continued\s+from\s+\[([^\]]+)\]\((https?:\/\/[^)]+)\)/i)
-    || opening.match(/Continued\s+from\s+(https?:\/\/\S+)/i);
-  if (!match) return null;
-  const urlText = match[2] || match[1];
-  let url;
-  try { url = new URL(urlText); } catch { return null; }
-  if (!/(^|\.)chatgpt\.com$/.test(url.hostname) && url.hostname !== 'chat.openai.com') return null;
-  const id = url.pathname.match(/\/c\/([A-Za-z0-9_-]+)/)?.[1];
-  if (!id) return null;
-  return { parentId: id, parentTitle: match[2] ? match[1].trim() : 'Previous conversation', parentUrl: url.href };
-}
-
 const ARCHIVE_KEY = 'chatvault.archive.v1';
 function readArchive() {
   try {
@@ -207,7 +193,7 @@ function saveToArchive(conv) {
     key,
     importedAt: new Date().toISOString(),
     conversation: conv,
-    continuation: continuationReference(conv)
+    continuation: extractContinuationReference(conv.messages)
   };
   if (existing >= 0) entries[existing] = { ...entries[existing], ...entry, importedAt: entries[existing].importedAt };
   else entries.unshift(entry);
@@ -266,7 +252,7 @@ function escapeArchiveText(value) {
 function loadConversation(conv) {
   state.conversation = conv;
   const saved = saveToArchive(conv);
-  const parent = continuationReference(conv);
+  const parent = extractContinuationReference(conv.messages);
   if (parent) setStatus((saved ? '✓ Saved to your local archive. ' : '') + 'Continuation detected: this chat continues “' + parent.parentTitle + '”.');
   $('preview').classList.remove('hidden');
   $('exports').classList.remove('hidden');
@@ -436,3 +422,6 @@ $('copy-beautified').addEventListener('click', async () => {
     setBeautifyStatus('✓ Beautified Markdown copied.');
   } catch { setBeautifyStatus('Clipboard blocked — use the download instead.', true); }
 });
+
+// Restore the user's local archive on page load.
+renderArchive(); // Restore
