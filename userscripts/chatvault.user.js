@@ -4,7 +4,7 @@
 // ==UserScript==
 // @name         ChatVault — Export any LLM chat (MD / PDF / ZIP)
 // @namespace    https://github.com/Chimthuwu/chatvault
-// @version      3.1.0
+// @version      3.2.0
 // @description  Export chats and return normalized JSON to ChatVault from supported share pages.
 // @grant        GM_getValue
 // @grant        GM_setValue
@@ -1257,7 +1257,7 @@ async function collectCurrentConversation() {
         console.warn('[ChatVault] Could not clear transfer result:', error));
     });
     window.addEventListener('message', event => {
-      if (event.source !== window || event.origin !== location.origin) return;
+      if (event.origin !== location.origin) return;
       const request = event.data;
       if (!request || request.type !== 'chatvault:browser-extract-request' ||
           typeof request.token !== 'string' || typeof request.url !== 'string') return;
