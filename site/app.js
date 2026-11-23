@@ -97,7 +97,7 @@ function startBrowserExtraction() {
     state.browserResolver = null;
   };
   const onMessage = event => {
-    if (event.source !== window || event.origin !== window.location.origin) return;
+    if (event.origin !== window.location.origin) return;
     const result = event.data;
     if (!result || result.type !== 'chatvault:browser-extract-result' || result.token !== token) return;
     if (!result.success || !result.conversation || !Array.isArray(result.conversation.messages) || !result.conversation.messages.length) {
