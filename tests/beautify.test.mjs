@@ -161,4 +161,7 @@ test('agent handoff separates decisions, constraints, proposals and open questio
   assert.ok(handoff.includes('site/app.js'));
   assert.match(handoff, /Treat proposals as unapproved/);
   assert.match(handoff, /Acceptance criteria/);
+  const actions = handoff.split('## Potential next actions')[1].split('## Relevant files')[0];
+  assert.doesNotMatch(actions, /could add an optional agent bundle/);
+  assert.match(handoff, /We decided to use local browser storage/);
 });
