@@ -9,7 +9,7 @@ const file = fileURLToPath(new URL('../userscripts/chatvault.user.js', import.me
 test('generated userscript is self-contained and parses', () => {
   const source = readFileSync(file, 'utf8');
   assert.match(source, /\/\/ ==UserScript==/);
-  assert.match(source, /@version\s+3\.0\.0/);
+  assert.match(source, /@version\s+3\.1\.0/);
   for (const host of ['chatgpt.com', 'claude.ai', 'gemini.google.com', 'grok.com', 'chat.deepseek.com', 'perplexity.ai', 'copilot.microsoft.com']) {
     assert.ok(source.includes(host), `missing @match host: ${host}`);
   }
@@ -17,5 +17,8 @@ test('generated userscript is self-contained and parses', () => {
   assert.doesNotMatch(source, /^import\s/m);
   assert.match(source, /function makeZip/);
   assert.match(source, /function collectCurrentConversation/);
+  assert.match(source, /GM_addValueChangeListener/);
+  assert.match(source, /chatvault:browser-extract-request/);
+  assert.match(source, /chatvault:browser-extract-result/);
   execFileSync(process.execPath, ['--check', file], { stdio: 'pipe' });
 });
