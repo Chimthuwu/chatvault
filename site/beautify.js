@@ -372,7 +372,7 @@ function extractHandoffLines(text) {
   const buckets = { decisions: [], proposed: [], constraints: [], status: [], open: [], actions: [] };
   const seen = new Set();
   const add = (key, value, source) => {
-    const clean = stripMd(value).replace(/\s+/g, ' ').trim();
+    const clean = stripMd(value).replace(/^\s*(?:[-*+]\s+|\d+[.)]\s+)/, '').replace(/\s+/g, ' ').trim();
     if (clean.length < 8 || clean.length > 420) return;
     const id = key + ':' + clean.toLowerCase();
     if (seen.has(id)) return;
@@ -382,8 +382,10 @@ function extractHandoffLines(text) {
   for (const [index, raw] of String(text).split('\n').entries()) {
     const heading = raw.match(/^#{1,3}\s+(.+)$/);
     if (heading) { section = stripMd(heading[1]); continue; }
-    if (!raw.trim() || /^\s*(?:>\s*|[-*+]\s+|\d+[.)]\s+)/.test(raw)) continue;
-    if (/^\s*~~~/.test(raw)) continue;
+    if (!raw.trim()) continue;
+    const trimmed = raw.trim();
+    if (trimmed.startsWith(String.fromCharCode(96).repeat(3)) || trimmed.startsWith('~~~')) { inCodeFence = !inCodeFence; continue; }
+    if (inCodeFence || /^\s*>\s?/.test(raw)) continue;
     const line = raw.trim();
     const source = section === 'Conversation' ? 'line ' + (index + 1) : section;
     if (DECISION_RE.test(line) && !PROPOSED_RE.test(line)) add('decisions', line, source);
