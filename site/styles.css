@@ -270,3 +270,20 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 .file-import input { max-width: 100%; color: #b9c4b0; font: 10px system-ui,sans-serif; }
 
 .fallback-actions { display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
+
+
+/* Local conversation archive and continuation chains */
+.archive-panel { margin-top: 14px; padding: 19px 21px; }
+.archive-intro { margin: 10px 0 14px; color: #8e9988; font-size: 10px; line-height: 1.65; }
+.archive-list { display: grid; gap: 8px; }
+.archive-empty { margin: 0; padding: 14px; border: 1px dashed #3a4637; border-radius: 8px; color: #85917e; font-size: 10px; }
+.archive-node { margin-left: calc(var(--depth, 0) * 17px); padding: 10px 12px; border: 1px solid #303b2e; border-radius: 8px; background: #171d17; }
+.archive-node-main { display: flex; align-items: center; gap: 9px; min-width: 0; }
+.archive-branch { color: var(--acid); font-size: 15px; }
+.archive-node-copy { min-width: 0; display: grid; gap: 3px; flex: 1; }
+.archive-node-copy strong { color: #d9e1d2; font-size: 10px; overflow-wrap: anywhere; }
+.archive-node-copy small { color: #818d7a; font-size: 8px; }
+.archive-state { flex: 0 0 auto; font-size: 7px; font-weight: 800; letter-spacing: .08em; }
+.archive-state.linked { color: #a9d887; }
+.archive-state.missing { color: #e2b878; }
+.archive-parent-link { display: inline-block; margin: 8px 0 0 24px; color: var(--acid); font-size: 9px; }
