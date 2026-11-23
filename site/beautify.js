@@ -369,7 +369,7 @@ const QUESTION_RE = /\?|\b(unknown|unclear|not sure|needs? confirmation|open que
 function extractHandoffLines(text) {
   let section = 'Conversation';
   let inCodeFence = false;
-  const buckets = { decisions: [], proposed: [], constraints: [], status: [], open: [], actions: [] };
+  const buckets = { context: [], decisions: [], proposed: [], constraints: [], status: [], open: [], actions: [] };
   const seen = new Set();
   const add = (key, value, source) => {
     const clean = stripMd(value).replace(/^\s*(?:[-*+]\s+|\d+[.)]\s+)/, '').replace(/\s+/g, ' ').trim();
@@ -388,6 +388,7 @@ function extractHandoffLines(text) {
     if (inCodeFence || /^\s*>\s?/.test(raw)) continue;
     const line = raw.trim();
     const source = section === 'Conversation' ? 'line ' + (index + 1) : section;
+    if (buckets.context.length < 3 && line.length > 15) add('context', line, source);
     if (DECISION_RE.test(line) && !PROPOSED_RE.test(line)) add('decisions', line, source);
     if (PROPOSED_RE.test(line)) add('proposed', line, source);
     if (CONSTRAINT_RE.test(line)) add('constraints', line, source);
@@ -418,7 +419,7 @@ export function buildAgentHandoff(input, titleHint = '') {
     '',
     '## Objective & context',
     '',
-    'Use the source conversation as the authority for the task, project context and terminology. The extracted items below are leads, not replacements for reading relevant source passages.',
+    buckets.context.length ? buckets.context.map(item => '- ' + item.value + ' _(source: ' + item.source + ')_').join('\\n') : 'No concise objective could be extracted automatically. Read the source conversation to establish the actual task and scope.',
     '',
     render('Confirmed decisions (explicit language)', buckets.decisions),
     render('Requirements & constraints (detected wording)', buckets.constraints),
