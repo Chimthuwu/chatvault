@@ -223,7 +223,6 @@ function renderArchive() {
       children.get(parentId).push(entry);
     }
   }
-  const referenced = new Set(entries.map(entry => entry.continuation?.parentId).filter(Boolean));
   const roots = entries.filter(entry => !entry.continuation || !byId.has(String(entry.continuation.parentId)));
   const rendered = new Set();
   const makeNode = (entry, depth = 0) => {
@@ -238,6 +237,7 @@ function renderArchive() {
     return '<div class="archive-node" style="--depth:' + Math.min(depth, 8) + '">' +
       '<div class="archive-node-main"><span class="archive-branch" aria-hidden="true">↳</span><div class="archive-node-copy"><strong>' + title +
       '</strong><small>' + count + ' messages · ' + escapeArchiveText(conv.metadata?.platform || 'import') + '</small></div>' + marker + '</div>' +
+      (depth === 0 ? '<button class="archive-export" type="button" data-chain-root="' + escapeArchiveText(entry.key) + '">Export known chain ↓</button>' : '') +
       (missing ? '<a class="archive-parent-link" href="' + escapeArchiveText(entry.continuation.parentUrl) + '" target="_blank" rel="noopener noreferrer">Open previous conversation ↗</a>' : '') +
       childNodes.map(child => makeNode(child, depth + 1)).join('') + '</div>';
   };
@@ -306,6 +306,57 @@ async function exportAs(format) {
     setStatus('Export failed: ' + (error.message || error), true);
   }
 }
+
+
+$('archive-list').addEventListener('click', event => {
+  const button = event.target.closest('[data-chain-root]');
+  if (!button) return;
+  const entries = readArchive();
+  const byId = new Map(entries.map(entry => [String(entry.conversation.id), entry]));
+  const root = entries.find(entry => entry.key === button.dataset.chainRoot);
+  if (!root) return;
+  const ordered = [];
+  const visited = new Set();
+  const visit = entry => {
+    if (!entry || visited.has(entry.key)) return;
+    visited.add(entry.key);
+    ordered.push(entry);
+    const next = entries.filter(candidate => candidate.continuation?.parentId === String(entry.conversation.id))
+      .sort((a, b) => a.importedAt.localeCompare(b.importedAt));
+    next.forEach(visit);
+  };
+  visit(root);
+  const messages = ordered.flatMap(entry => entry.conversation.messages || []);
+  const combined = toConversation({
+    id: 'chain-' + root.key,
+    title: root.conversation.title || 'Conversation chain',
+    source: 'ChatVault local conversation chain',
+    messages,
+    platform: root.conversation.metadata?.platform || 'chatgpt',
+    method: 'Conversation chain archive',
+    warnings: ordered.some(entry => entry.continuation && !byId.has(String(entry.continuation.parentId)))
+      ? ['One or more earlier conversations in this chain have not been imported. This export contains only archived conversations.'] : []
+  });
+  state.conversation = combined;
+  $('preview').classList.remove('hidden');
+  $('exports').classList.remove('hidden');
+  $('preview-title').textContent = combined.title + ' — complete chain';
+  $('preview-meta').textContent = ordered.length + ' conversations · ' + messages.length + ' messages';
+  $('preview-messages').replaceChildren(...messages.slice(0, 8).map(message => {
+    const row = document.createElement('div');
+    row.className = 'preview-msg ' + (message.role === 'user' ? 'user' : '');
+    const role = document.createElement('div');
+    role.className = 'role';
+    role.textContent = roleLabel(message.role);
+    const snippet = document.createElement('div');
+    snippet.className = 'snippet';
+    snippet.textContent = messageToText(message);
+    row.append(role, snippet);
+    return row;
+  }));
+  setStatus('✓ Combined ' + ordered.length + ' imported conversation(s). Choose an export format below.');
+  $('preview').scrollIntoView({ behavior: 'smooth', block: 'start' });
+});
 
 $('extract-btn').addEventListener('click', extract);
 document.querySelectorAll('[data-export]').forEach(btn => btn.addEventListener('click', () => exportAs(btn.dataset.export)));
