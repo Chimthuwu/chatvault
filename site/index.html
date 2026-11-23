@@ -110,6 +110,22 @@
 
               <div class="import-footer"><div class="input-note"><span class="note-check">✓</span> No account or API key required</div><button id="extract-btn" class="btn btn-primary" type="button"><span>Extract conversation</span><span class="btn-arrow">→</span></button></div>
               <p id="status" class="status" role="status" aria-live="polite">Ready when you are. Your archive starts here.</p>
+              <div id="resolver-fallback" class="resolver-fallback hidden" role="region" aria-labelledby="resolver-fallback-title">
+                <div class="fallback-icon">↗</div>
+                <div class="fallback-copy">
+                  <strong id="resolver-fallback-title">This platform won't allow server-side retrieval.</strong>
+                  <p>That's a platform restriction, not a problem with your link. ChatVault can't bypass it from Cloudflare. You can still export the conversation directly from the page in your browser.</p>
+                  <div class="fallback-actions">
+                    <a class="btn btn-primary btn-small" href="https://raw.githubusercontent.com/Chimthuwu/chatvault/main/userscripts/chatvault.user.js" target="_blank" rel="noopener noreferrer">Install browser userscript ↗</a>
+                    <button id="fallback-json" class="btn btn-subtle btn-small" type="button">Use JSON export instead</button>
+                  </div>
+                  <ol class="fallback-steps">
+                    <li>Install <a href="https://www.tampermonkey.net/" target="_blank" rel="noopener noreferrer">Tampermonkey</a> if you don't already use it.</li>
+                    <li>Open the userscript link and choose Install.</li>
+                    <li>Return to the conversation tab, refresh, then use the ChatVault toolbar to export.</li>
+                  </ol>
+                </div>
+              </div>
             </div>
 
             <aside class="format-panel">
