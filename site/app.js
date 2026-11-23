@@ -1,6 +1,6 @@
 // ChatVault web app — all conversions happen locally; only /api/resolve touches the network.
 import {
-  toConversation, parseImport, renderMarkdown, renderHtml,
+  toConversation, parseImport, renderMarkdown, renderHtml, platformForHost,
   downloadBlob, messageToText, roleLabel, slugify, openPrintWindow
 } from './core.js';
 import { makeZip, makePdf, blobBytes } from './archive.js';
@@ -58,6 +58,73 @@ function parseTranscript(text) {
   });
 }
 
+function startBrowserExtraction() {
+  if (state.browserResolver) return;
+  const raw = $('url-input').value.trim();
+  let target;
+  let platform;
+  try {
+    target = new URL(raw);
+    if (target.protocol !== 'https:' || target.username || target.password ||
+        (target.port && target.port !== '443')) {
+      throw new Error('Use a public HTTPS share URL without credentials or a custom port.');
+    }
+    platform = platformForHost(target.hostname);
+    const shareId = target.pathname.split('/').filter(Boolean).pop() || '';
+    if (!platform || !platform.share.test(target.pathname) ||
+        !/^[A-Za-z0-9_-]{4,256}$/.test(shareId)) {
+      throw new Error('That is not a supported public share URL. Check the link and try again.');
+    }
+  } catch (error) {
+    setStatus(error.message || 'Invalid share URL.', true);
+    return;
+  }
+
+  // Open synchronously from the click handler so popup blockers allow it.
+  const popup = window.open(target.href, '_blank');
+  if (!popup) {
+    setStatus('Your browser blocked the share tab. Allow pop-ups for ChatVault, then try again.', true);
+    return;
+  }
+
+  const token = globalThis.crypto && crypto.randomUUID
+    ? crypto.randomUUID()
+    : 'cv-' + Date.now() + '-' + Math.random().toString(36).slice(2);
+  let timeout = null;
+  const cleanup = () => {
+    if (timeout !== null) window.clearTimeout(timeout);
+    window.removeEventListener('message', onMessage);
+    state.browserResolver = null;
+  };
+  const onMessage = event => {
+    if (event.source !== window || event.origin !== window.location.origin) return;
+    const result = event.data;
+    if (!result || result.type !== 'chatvault:browser-extract-result' || result.token !== token) return;
+    if (!result.success || !result.conversation || !Array.isArray(result.conversation.messages) || !result.conversation.messages.length) {
+      cleanup();
+      setStatus(result.error || 'The userscript could not read messages from that share page.', true);
+      showResolverFallback(true);
+      return;
+    }
+    cleanup();
+    try { popup.close(); } catch { /* The browser may have detached the tab. */ }
+    loadConversation(result.conversation);
+    showResolverFallback(false);
+    setStatus('✓ ' + result.conversation.messages.length + ' messages returned as ChatVault JSON from the browser tab.');
+  };
+
+  window.addEventListener('message', onMessage);
+  state.browserResolver = { token: token, popup: popup };
+  setStatus('Waiting for the ChatVault userscript to read the share page and return JSON…');
+  window.postMessage({
+    type: 'chatvault:browser-extract-request', token: token, url: target.href
+  }, window.location.origin);
+  timeout = window.setTimeout(() => {
+    cleanup();
+    setStatus('No JSON came back. Check that the updated ChatVault userscript is installed and that the share page finished loading.', true);
+    showResolverFallback(true);
+  }, 60000);
+}
 async function extract() {
   setBusy(true);
   try {
@@ -175,6 +242,7 @@ $('json-file').addEventListener('change', async event => {
     setStatus('Could not read that file. Try opening the JSON and pasting its contents.', true);
   }
 });
+$('fallback-browser').addEventListener('click', startBrowserExtraction);
 $('fallback-json').addEventListener('click', () => {
   setMode('json');
   $('json-file').click();
