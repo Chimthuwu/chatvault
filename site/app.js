@@ -18,6 +18,9 @@ function setBusy(busy) {
   $('extract-btn').disabled = busy;
   $('extract-btn').textContent = busy ? 'Working…' : 'Extract conversation';
 }
+function showResolverFallback(show) {
+  $('resolver-fallback').classList.toggle('hidden', !show);
+}
 function setMode(mode) {
   state.mode = mode;
   document.querySelectorAll('.tab').forEach(tab => {
@@ -26,6 +29,7 @@ function setMode(mode) {
     tab.setAttribute('aria-selected', String(active));
   });
   ['url', 'json', 'text'].forEach(m => $('panel-' + m).classList.toggle('hidden', m !== mode));
+  $('resolver-fallback').classList.add('hidden');
   setStatus('Ready when you are ✦');
 }
 document.querySelectorAll('.tab').forEach(tab => tab.addEventListener('click', () => setMode(tab.dataset.mode)));
@@ -84,7 +88,12 @@ async function extract() {
     loadConversation(conv);
     setStatus(`✓ ${conv.messages.length} messages extracted from ${conv.metadata?.platform || 'import'}. Choose a download below.`);
   } catch (error) {
-    setStatus(error.message || 'Extraction failed.', true);
+    const message = error.message || 'Extraction failed.';
+    const blocked = /platform blocked this server-side request|HTTP 403|HTTP 429/i.test(message);
+    showResolverFallback(blocked);
+    setStatus(blocked
+      ? 'The platform refused the server request. Use the browser userscript steps below, then import its JSON file.'
+      : message, true);
   } finally {
     setBusy(false);
   }
@@ -155,6 +164,21 @@ $('copy-btn').addEventListener('click', async () => {
   } catch { setStatus('Clipboard blocked by the browser. Use the Markdown download instead.', true); }
 });
 $('url-input').addEventListener('keydown', e => { if (e.key === 'Enter') extract(); });
+$('json-file').addEventListener('change', async event => {
+  const file = event.target.files?.[0];
+  if (!file) return;
+  try {
+    $('json-input').value = await file.text();
+    setMode('json');
+    setStatus(`Loaded ${file.name}. Click “Extract conversation” to import it locally.`);
+  } catch {
+    setStatus('Could not read that file. Try opening the JSON and pasting its contents.', true);
+  }
+});
+$('fallback-json').addEventListener('click', () => {
+  setMode('json');
+  $('json-file').click();
+});
 
 // ---- Phase 2: Beautify & Archive ----
 function setBeautifyStatus(message, error = false) {
