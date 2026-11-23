@@ -137,3 +137,28 @@ test('TOC ignores headings inside code fences; report parses text after a fence'
   assert.match(report, /use Cloudflare/);
   assert.match(report, /Preserved code references/);
 });
+
+test('agent handoff separates decisions, constraints, proposals and open questions', async () => {
+  const { buildAgentHandoff } = await import('../site/beautify.js');
+  const source = [
+    '# ChatVault implementation',
+    'We decided to use local browser storage.',
+    'The app must preserve the user original transcript.',
+    'We could add an optional agent bundle later.',
+    'TODO: verify the ZIP export in Firefox?',
+    'The archive is currently stored in localStorage.',
+    'Update site/app.js and tests/beautify.test.mjs next.'
+  ].join('\\n');
+  const handoff = buildAgentHandoff(source);
+  assert.match(handoff, /Confirmed decisions/);
+  assert.match(handoff, /decided to use local browser storage/);
+  assert.match(handoff, /Requirements & constraints/);
+  assert.match(handoff, /must preserve the user original transcript/);
+  assert.match(handoff, /Proposals & ideas/);
+  assert.match(handoff, /could add an optional agent bundle/);
+  assert.match(handoff, /Open questions, dependencies & blockers/);
+  assert.match(handoff, /verify the ZIP export in Firefox/);
+  assert.match(handoff, /site\\/app\\.js/);
+  assert.match(handoff, /Treat proposals as unapproved/);
+  assert.match(handoff, /Acceptance criteria/);
+});
