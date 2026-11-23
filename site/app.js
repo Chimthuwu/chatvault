@@ -170,8 +170,104 @@ async function extract() {
   }
 }
 
+
+function continuationReference(conv) {
+  const opening = (conv.messages || []).slice(0, 5).map(messageToText).join("\n");
+  const match = opening.match(/Continued\s+from\s+\[([^\]]+)\]\((https?:\/\/[^)]+)\)/i)
+    || opening.match(/Continued\s+from\s+(https?:\/\/\S+)/i);
+  if (!match) return null;
+  const urlText = match[2] || match[1];
+  let url;
+  try { url = new URL(urlText); } catch { return null; }
+  if (!/(^|\.)chatgpt\.com$/.test(url.hostname) && url.hostname !== 'chat.openai.com') return null;
+  const id = url.pathname.match(/\/c\/([A-Za-z0-9_-]+)/)?.[1];
+  if (!id) return null;
+  return { parentId: id, parentTitle: match[2] ? match[1].trim() : 'Previous conversation', parentUrl: url.href };
+}
+
+const ARCHIVE_KEY = 'chatvault.archive.v1';
+function readArchive() {
+  try {
+    const value = JSON.parse(localStorage.getItem(ARCHIVE_KEY) || '[]');
+    return Array.isArray(value) ? value.filter(item => item && item.conversation?.messages) : [];
+  } catch { return []; }
+}
+function archiveIdentity(conv) {
+  const platform = conv.metadata?.platform || 'generic';
+  const id = conv.id && !['conversation', 'current-page'].includes(conv.id)
+    ? String(conv.id)
+    : (conv.source || conv.exportedAt || conv.title);
+  return platform + ':' + id;
+}
+function saveToArchive(conv) {
+  const entries = readArchive();
+  const key = archiveIdentity(conv);
+  const existing = entries.findIndex(item => item.key === key);
+  const entry = {
+    key,
+    importedAt: new Date().toISOString(),
+    conversation: conv,
+    continuation: continuationReference(conv)
+  };
+  if (existing >= 0) entries[existing] = { ...entries[existing], ...entry, importedAt: entries[existing].importedAt };
+  else entries.unshift(entry);
+  try {
+    localStorage.setItem(ARCHIVE_KEY, JSON.stringify(entries.slice(0, 500)));
+    renderArchive();
+    return true;
+  } catch (error) {
+    console.warn('[ChatVault] Could not persist local archive:', error);
+    return false;
+  }
+}
+function renderArchive() {
+  const root = $('archive-list');
+  if (!root) return;
+  const entries = readArchive();
+  if (!entries.length) {
+    root.innerHTML = '<p class="archive-empty">Imported conversations will appear here. Chain relationships are detected from ChatGPT’s “Continued from” reference.</p>';
+    return;
+  }
+  const byId = new Map(entries.map(entry => [String(entry.conversation.id), entry]));
+  const children = new Map();
+  for (const entry of entries) {
+    const parentId = entry.continuation?.parentId;
+    if (parentId) {
+      if (!children.has(parentId)) children.set(parentId, []);
+      children.get(parentId).push(entry);
+    }
+  }
+  const referenced = new Set(entries.map(entry => entry.continuation?.parentId).filter(Boolean));
+  const roots = entries.filter(entry => !entry.continuation || !byId.has(String(entry.continuation.parentId)));
+  const rendered = new Set();
+  const makeNode = (entry, depth = 0) => {
+    if (rendered.has(entry.key)) return '';
+    rendered.add(entry.key);
+    const conv = entry.conversation;
+    const title = escapeArchiveText(conv.title || 'Untitled conversation');
+    const count = Number(conv.messages?.length || 0);
+    const childNodes = children.get(String(conv.id)) || [];
+    const missing = entry.continuation && !byId.has(String(entry.continuation.parentId));
+    const marker = missing ? '<span class="archive-state missing">PARENT NOT IMPORTED</span>' : '<span class="archive-state linked">ARCHIVED</span>';
+    return '<div class="archive-node" style="--depth:' + Math.min(depth, 8) + '">' +
+      '<div class="archive-node-main"><span class="archive-branch" aria-hidden="true">↳</span><div class="archive-node-copy"><strong>' + title +
+      '</strong><small>' + count + ' messages · ' + escapeArchiveText(conv.metadata?.platform || 'import') + '</small></div>' + marker + '</div>' +
+      (missing ? '<a class="archive-parent-link" href="' + escapeArchiveText(entry.continuation.parentUrl) + '" target="_blank" rel="noopener noreferrer">Open previous conversation ↗</a>' : '') +
+      childNodes.map(child => makeNode(child, depth + 1)).join('') + '</div>';
+  };
+  let markup = roots.map(entry => makeNode(entry)).join('');
+  for (const entry of entries) if (!rendered.has(entry.key)) markup += makeNode(entry);
+  root.innerHTML = markup;
+}
+function escapeArchiveText(value) {
+  return String(value ?? '').replace(/[&<>"']/g, char => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[char]));
+}
+
 function loadConversation(conv) {
   state.conversation = conv;
+  const saved = saveToArchive(conv);
+  const parent = continuationReference(conv);
+  if (parent) setStatus((saved ? '✓ Saved to your local archive. ' : '') + 'Continuation detected: this chat continues “' + parent.parentTitle + '”.');
   $('preview').classList.remove('hidden');
   $('exports').classList.remove('hidden');
   $('preview-title').textContent = conv.title || 'Conversation';
