@@ -47,7 +47,6 @@ window.addEventListener('message', event => {
 const returnedToken = new URLSearchParams(location.hash.slice(1)).get('cv-return');
 if (returnedToken) {
   state.browserResolver = { token: returnedToken };
-  history.replaceState(null, '', location.pathname + location.search);
 }
 function setMode(mode) {
   state.mode = mode;
