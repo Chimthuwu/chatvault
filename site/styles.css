@@ -259,3 +259,13 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 @media (prefers-reduced-motion: reduce) {
   *,*::before,*::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
 }
+/* Share-link retrieval fallback */
+.resolver-fallback { display: flex; gap: 12px; margin-top: 12px; padding: 15px; border: 1px solid #665237; border-radius: 10px; background: linear-gradient(145deg,rgba(103,75,35,.18),rgba(45,39,27,.34)); }
+.fallback-icon { flex: 0 0 29px; display: grid; place-items: center; width: 29px; height: 29px; border: 1px solid #80663d; border-radius: 8px; background: rgba(214,168,88,.12); color: #e8c17e; font-size: 15px; }
+.fallback-copy { min-width: 0; }
+.fallback-copy > strong { color: #ead7b4; font-size: 11px; }
+.fallback-copy > p { margin: 4px 0 10px; color: #b5a58a; font-size: 9px; line-height: 1.65; }
+.fallback-actions { display: flex; flex-wrap: wrap; gap: 7px; }
+.fallback-steps { margin: 11px 0 0; padding-left: 16px; color: #9d927e; font-size: 9px; line-height: 1.8; }
+.fallback-steps a { color: #c9dfaa; text-decoration: underline; text-underline-offset: 2px; }
+@media (max-width: 540px) { .resolver-fallback { padding: 12px; } .fallback-actions .btn { flex: 1 1 100%; } }
