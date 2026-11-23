@@ -64,19 +64,6 @@
       </header>
 
       <div class="page-content">
-        <section class="welcome">
-          <div class="welcome-copy">
-            <div class="eyebrow"><span class="eyebrow-line"></span> YOUR CONVERSATIONS, KEPT</div>
-            <h1>Keep the good<br><span>conversations.</span></h1>
-            <p>Bring a chat in. Give it a home. Take it anywhere. ChatVault turns conversations from your favourite AI tools into clean, portable archives you actually own.</p>
-          </div>
-          <div class="welcome-art" aria-hidden="true">
-            <div class="orbit orbit-a"></div><div class="orbit orbit-b"></div>
-            <div class="vault-document"><div class="doc-fold"></div><div class="doc-lines"><i></i><i></i><i></i><i></i></div><div class="doc-seal">✳</div></div>
-            <span class="float-tag tag-md">.MD</span><span class="float-tag tag-pdf">.PDF</span><span class="float-tag tag-zip">.ZIP</span>
-          </div>
-        </section>
-
         <section id="exporter" class="workspace-section">
           <div class="section-heading">
             <div><div class="eyebrow"><span class="eyebrow-line"></span> 01 / IMPORT</div><h2>Bring a conversation in</h2><p>Choose the source that works for you. Your content stays yours.</p></div>
@@ -99,6 +86,7 @@
               </div>
               <div class="mode-panel hidden" id="panel-json" role="tabpanel" aria-labelledby="tab-json">
                 <label for="json-input">Conversation JSON</label>
+                <label class="file-import" for="json-file">Or choose a ChatVault JSON file <input id="json-file" type="file" accept=".json,application/json"></label>
                 <textarea id="json-input" rows="7" placeholder='Paste a conversations.json export or a JSON array of messages…' spellcheck="false"></textarea>
                 <p class="hint"><span class="hint-lock">⌁</span> Parsed entirely in your browser. The file is not uploaded.</p>
               </div>
@@ -110,6 +98,17 @@
 
               <div class="import-footer"><div class="input-note"><span class="note-check">✓</span> No account or API key required</div><button id="extract-btn" class="btn btn-primary" type="button"><span>Extract conversation</span><span class="btn-arrow">→</span></button></div>
               <p id="status" class="status" role="status" aria-live="polite">Ready when you are. Your archive starts here.</p>
+              <div id="resolver-fallback" class="resolver-fallback hidden" role="note">
+                <div class="fallback-title">This platform blocked server-side retrieval.</div>
+                <p>That share page won't allow ChatVault's server to fetch it. Extract it from the page in your browser instead:</p>
+                <ol>
+                  <li>Install <a href="https://www.tampermonkey.net/" target="_blank" rel="noopener noreferrer">Tampermonkey</a> if you haven't already.</li>
+                  <li>Install the <a href="https://raw.githubusercontent.com/Chimthuwu/chatvault/main/userscripts/chatvault.user.js" target="_blank" rel="noopener noreferrer">ChatVault browser userscript</a>.</li>
+                  <li>Open the conversation on its original platform and click <strong>ZIP</strong> in the ChatVault toolbar.</li>
+                  <li>Unzip the download, then import its <code>.json</code> file here.</li>
+                </ol>
+                <button id="fallback-json" class="btn btn-subtle btn-small" type="button">Import the JSON file instead →</button>
+              </div>
             </div>
 
             <aside class="format-panel">
