@@ -18,6 +18,8 @@ test('generated userscript is self-contained and parses', () => {
   assert.match(source, /function makeZip/);
   assert.match(source, /function collectCurrentConversation/);
   assert.match(source, /GM_addValueChangeListener/);
+  assert.match(source, /https:\/\/\*\.chat-vault\.pages\.dev\/\*/);
+  assert.match(source, /isChatVaultOrigin/);
   assert.match(source, /chatvault:browser-extract-request/);
   assert.match(source, /chatvault:browser-extract-result/);
   execFileSync(process.execPath, ['--check', file], { stdio: 'pipe' });
