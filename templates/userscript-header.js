@@ -1,8 +1,11 @@
 // ==UserScript==
 // @name         ChatVault — Export any LLM chat (MD / PDF / ZIP)
 // @namespace    https://github.com/Chimthuwu/chatvault
-// @version      3.0.0
-// @description  Export ChatGPT, Claude, Gemini, Grok, DeepSeek and other chats to Markdown, PDF, HTML or ZIP. Local, no API key.
+// @version      3.1.0
+// @description  Export chats and return normalized JSON to ChatVault from supported share pages.
+// @grant        GM_getValue
+// @grant        GM_setValue
+// @grant        GM_addValueChangeListener
 // @match        https://chatgpt.com/*
 // @match        https://chat.openai.com/*
 // @match        https://claude.ai/*
@@ -14,7 +17,8 @@
 // @match        https://www.perplexity.ai/*
 // @match        https://copilot.microsoft.com/*
 // @match        https://www.bing.com/chat/*
-// @grant        none
+// @match        https://chat-vault.pages.dev/*
+// @match        https://chatvault.nyan-anonymous-d45.workers.dev/*
 // @noframes
 // @run-at       document-idle
 // ==/UserScript==
