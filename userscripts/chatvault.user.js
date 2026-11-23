@@ -159,6 +159,30 @@ function toConversation({ id = 'conversation', title = 'Conversation', source = 
   };
 }
 
+
+/**
+ * Detect ChatGPT's explicit "Continued from [title](.../c/<id>)" marker.
+ * Returns a parent reference only for a valid ChatGPT conversation URL.
+ */
+function extractContinuationReference(messages = []) {
+  const opening = (messages || []).slice(0, 5).map(messageToText).join('\n');
+  const match = opening.match(/Continued\s+from\s+\[([^\]]+)\]\((https?:\/\/[^)]+)\)/i)
+    || opening.match(/Continued\s+from\s+(https?:\/\/\S+)/i);
+  if (!match) return null;
+  const urlText = match[2] || match[1];
+  let url;
+  try { url = new URL(urlText); } catch { return null; }
+  if (url.protocol !== 'https:' ||
+      (!/(^|\.)chatgpt\.com$/.test(url.hostname) && url.hostname !== 'chat.openai.com')) return null;
+  const parentId = url.pathname.match(/\/c\/([A-Za-z0-9_-]+)/)?.[1];
+  if (!parentId) return null;
+  return {
+    parentId,
+    parentTitle: match[2] ? match[1].trim() : 'Previous conversation',
+    parentUrl: url.href
+  };
+}
+
 function timeLine(message) {
   if (!message.timestamp) return '';
   const t = typeof message.timestamp === 'number'
