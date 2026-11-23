@@ -368,6 +368,7 @@ const QUESTION_RE = /\?|\b(unknown|unclear|not sure|needs? confirmation|open que
 
 function extractHandoffLines(text) {
   let section = 'Conversation';
+  let inCodeFence = false;
   const buckets = { decisions: [], proposed: [], constraints: [], status: [], open: [], actions: [] };
   const seen = new Set();
   const add = (key, value, source) => {
