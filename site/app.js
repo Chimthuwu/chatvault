@@ -116,14 +116,14 @@ function startBrowserExtraction() {
   window.addEventListener('message', onMessage);
   state.browserResolver = { token: token, popup: popup };
   setStatus('Waiting for the ChatVault userscript to read the share page and return JSON…');
-  window.postMessage({
-    type: 'chatvault:browser-extract-request', token: token, url: target.href
-  }, window.location.origin);
   timeout = window.setTimeout(() => {
     cleanup();
     setStatus('No JSON came back. Check that the updated ChatVault userscript is installed and that the share page finished loading.', true);
     showResolverFallback(true);
   }, 60000);
+  window.postMessage({
+    type: 'chatvault:browser-extract-request', token: token, url: target.href
+  }, window.location.origin);
 }
 async function extract() {
   if (state.mode === 'url') {
