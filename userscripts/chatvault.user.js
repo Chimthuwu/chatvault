@@ -13,6 +13,7 @@
 // @match        https://chat.openai.com/*
 // @match        https://claude.ai/*
 // @match        https://gemini.google.com/*
+// @match        https://g.co/*
 // @match        https://grok.com/*
 // @match        https://x.com/*
 // @match        https://chat.deepseek.com/*
