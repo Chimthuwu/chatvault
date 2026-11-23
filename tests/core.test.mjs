@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  normalizeMessages, toConversation, renderMarkdown, renderHtml, parseImport, platformForHost
+  normalizeMessages, toConversation, renderMarkdown, renderHtml, parseImport, platformForHost, extractContinuationReference
 } from '../site/core.js';
 
 const conv = toConversation({
@@ -70,4 +70,22 @@ test('platformForHost recognizes supported hosts', () => {
   assert.equal(platformForHost('chatgpt.com').id, 'chatgpt');
   assert.equal(platformForHost('chat.deepseek.com').id, 'deepseek');
   assert.equal(platformForHost('example.com'), null);
+});
+
+
+test('extractContinuationReference detects ChatGPT continuation marker and parent conversation ID', () => {
+  const result = extractContinuationReference([{
+    role: 'assistant',
+    content: 'Continued from [Assess Script Safety (1)](https://chatgpt.com/c/6b01f552-e394-83ec-8755-4d6d75d412de)'
+  }]);
+  assert.deepEqual(result, {
+    parentId: '6b01f552-e394-83ec-8755-4d6d75d412de',
+    parentTitle: 'Assess Script Safety (1)',
+    parentUrl: 'https://chatgpt.com/c/6b01f552-e394-83ec-8755-4d6d75d412de'
+  });
+});
+
+test('extractContinuationReference ignores unrelated links and unsafe hosts', () => {
+  assert.equal(extractContinuationReference([{ role: 'assistant', content: 'Continued from [x](https://evil.example/c/abc123)' }]), null);
+  assert.equal(extractContinuationReference([{ role: 'assistant', content: 'See https://chatgpt.com/c/abc123' }]), null);
 });
