@@ -18,6 +18,7 @@
 // @match        https://copilot.microsoft.com/*
 // @match        https://www.bing.com/chat/*
 // @match        https://chat-vault.pages.dev/*
+// @match        https://*.chat-vault.pages.dev/*
 // @match        https://chatvault.nyan-anonymous-d45.workers.dev/*
 // @noframes
 // @run-at       document-idle
