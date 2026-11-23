@@ -11,32 +11,51 @@
   const REQUEST_KEY = 'chatvault:browser-extract-request';
   const RESULT_KEY = 'chatvault:browser-extract-result';
 
-  // ChatVault tab: receive page requests and relay provider results.
+  // ChatVault tab: queue extraction, then receive the result after same-tab return.
   if (isChatVaultOrigin) {
-    if (typeof GM_addValueChangeListener !== 'function' || typeof GM_setValue !== 'function') {
+    if (typeof GM_addValueChangeListener !== 'function' || typeof GM_setValue !== 'function' ||
+        typeof GM_getValue !== 'function') {
       console.warn('[ChatVault] Browser JSON handoff requires Tampermonkey GM storage permissions.');
       return;
     }
-    GM_addValueChangeListener(RESULT_KEY, (_key, _oldValue, result) => {
+    const relayResult = result => {
       if (!result || !result.token) return;
       window.postMessage(Object.assign({ type: 'chatvault:browser-extract-result' }, result), location.origin);
       Promise.resolve(GM_setValue(RESULT_KEY, null)).catch(error =>
         console.warn('[ChatVault] Could not clear transfer result:', error));
-    });
-    window.addEventListener('message', event => {
+    };
+    GM_addValueChangeListener(RESULT_KEY, (_key, _oldValue, result) => relayResult(result));
+    const returnToken = new URLSearchParams(location.hash.slice(1)).get('cv-return');
+    if (returnToken) {
+      Promise.resolve(GM_getValue(RESULT_KEY)).then(result => {
+        if (result && result.token === returnToken) relayResult(result);
+      }).catch(error => console.warn('[ChatVault] Could not read returned extraction:', error));
+    }
+    window.addEventListener('message', async event => {
       if (event.origin !== location.origin) return;
       const request = event.data;
       if (!request || request.type !== 'chatvault:browser-extract-request' ||
-          typeof request.token !== 'string' || typeof request.url !== 'string') return;
-      let target;
-      try { target = new URL(request.url); } catch { return; }
+          typeof request.token !== 'string' || typeof request.url !== 'string' ||
+          typeof request.returnUrl !== 'string') return;
+      let target, returnTarget;
+      try { target = new URL(request.url); returnTarget = new URL(request.returnUrl); } catch { return; }
       const platform = platformForHost(target.hostname);
       if (target.protocol !== 'https:' || target.username || target.password ||
           (target.port && target.port !== '443') || !platform ||
-          !platform.share.test(target.pathname)) return;
-      Promise.resolve(GM_setValue(REQUEST_KEY, {
-        token: request.token, url: target.href, expiresAt: Date.now() + 90000
-      })).catch(error => console.warn('[ChatVault] Could not queue extraction:', error));
+          !platform.share.test(target.pathname) || returnTarget.origin !== location.origin ||
+          new URLSearchParams(returnTarget.hash.slice(1)).get('cv-return') !== request.token) return;
+      try {
+        await Promise.resolve(GM_setValue(REQUEST_KEY, {
+          token: request.token, url: target.href, returnUrl: returnTarget.href,
+          expiresAt: Date.now() + 120000
+        }));
+        window.postMessage({ type: 'chatvault:browser-extract-started', token: request.token }, location.origin);
+      } catch (error) {
+        window.postMessage({
+          type: 'chatvault:browser-extract-result', token: request.token,
+          success: false, error: error && error.message || 'Could not queue browser extraction.'
+        }, location.origin);
+      }
     });
     return;
   }
@@ -49,22 +68,28 @@
       typeof GM_getValue === 'function' && typeof GM_setValue === 'function') {
     const processingRequests = new Set();
     async function processBrowserRequest(request) {
-      if (!request || !request.token || !request.url ||
+      if (!request || !request.token || !request.url || !request.returnUrl ||
           Number(request.expiresAt) < Date.now() || processingRequests.has(request.token)) return;
-      let target;
-      try { target = new URL(request.url); } catch { return; }
+      let target, returnTarget;
+      try { target = new URL(request.url); returnTarget = new URL(request.returnUrl); } catch { return; }
+      const allowedReturnHost = returnTarget.hostname === 'chat-vault.pages.dev' ||
+        returnTarget.hostname.endsWith('.chat-vault.pages.dev') ||
+        returnTarget.hostname === 'chatvault.nyan-anonymous-d45.workers.dev';
       const requestedPlatform = platformForHost(target.hostname);
       const pagePlatform = detectPagePlatform();
       const requestedId = target.pathname.split('/').filter(Boolean).pop();
       const pageId = location.pathname.split('/').filter(Boolean).pop();
-      if (!requestedPlatform || requestedPlatform.id !== pagePlatform.id ||
+      if (!allowedReturnHost || returnTarget.protocol !== 'https:' ||
+          new URLSearchParams(returnTarget.hash.slice(1)).get('cv-return') !== request.token ||
+          !requestedPlatform || requestedPlatform.id !== pagePlatform.id ||
           !requestedPlatform.share.test(target.pathname) || !requestedId || requestedId !== pageId) return;
 
       processingRequests.add(request.token);
-      let conversation = null;
-      let lastError = null;
+      let result;
       try {
         await new Promise(resolve => setTimeout(resolve, 900));
+        let conversation = null;
+        let lastError = null;
         for (let attempt = 0; attempt < 8; attempt++) {
           try {
             const candidate = await collectCurrentConversation();
@@ -75,24 +100,25 @@
           } catch (error) { lastError = error; }
           if (attempt < 7) await new Promise(resolve => setTimeout(resolve, 850));
         }
-        const result = conversation
-          ? { token: request.token, success: true, conversation: conversation, sourceUrl: location.href }
+        result = conversation
+          ? { token: request.token, success: true, conversation, sourceUrl: location.href }
           : { token: request.token, success: false, error: lastError && lastError.message || 'No conversation messages were found on the share page.' };
-        const serialized = JSON.stringify(result);
-        if (serialized.length > 3000000) {
-          result.success = false;
-          result.conversation = null;
-          result.error = 'This conversation is too large for the automatic browser handoff. Use the userscript ZIP export and import its JSON file instead.';
+        if (JSON.stringify(result).length > 3000000) {
+          result = { token: request.token, success: false,
+            error: 'This conversation is too large for the automatic browser handoff. Use the userscript ZIP export and import its JSON file instead.' };
         }
-        await Promise.resolve(GM_setValue(RESULT_KEY, result));
       } catch (error) {
-        await Promise.resolve(GM_setValue(RESULT_KEY, {
-          token: request.token, success: false,
-          error: error && error.message || 'Browser extraction failed.'
-        })).catch(() => {});
+        result = { token: request.token, success: false,
+          error: error && error.message || 'Browser extraction failed.' };
+      }
+      try {
+        await Promise.resolve(GM_setValue(RESULT_KEY, result));
+        await Promise.resolve(GM_setValue(REQUEST_KEY, null));
+        location.replace(returnTarget.href);
+      } catch (error) {
+        console.error('[ChatVault] Could not complete same-tab return:', error);
       } finally {
         processingRequests.delete(request.token);
-        await Promise.resolve(GM_setValue(REQUEST_KEY, null)).catch(() => {});
       }
     }
     GM_addValueChangeListener(REQUEST_KEY, (_key, _oldValue, request) => {
