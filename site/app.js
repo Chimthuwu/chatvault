@@ -126,6 +126,10 @@ function startBrowserExtraction() {
   }, 60000);
 }
 async function extract() {
+  if (state.mode === 'url') {
+    startBrowserExtraction();
+    return;
+  }
   setBusy(true);
   try {
     let conv;
@@ -159,7 +163,7 @@ async function extract() {
     const blocked = /platform blocked this server-side request|HTTP 403|HTTP 429/i.test(message);
     showResolverFallback(blocked);
     setStatus(blocked
-      ? 'The platform refused the server request. Use the browser userscript steps below, then import its JSON file.'
+      ? 'The platform refused server-side access. Use the browser extraction button to return JSON directly from the share tab.'
       : message, true);
   } finally {
     setBusy(false);
