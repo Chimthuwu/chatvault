@@ -21,6 +21,7 @@
 // @match        https://copilot.microsoft.com/*
 // @match        https://www.bing.com/chat/*
 // @match        https://chat-vault.pages.dev/*
+// @match        https://*.chat-vault.pages.dev/*
 // @match        https://chatvault.nyan-anonymous-d45.workers.dev/*
 // @noframes
 // @run-at       document-idle
@@ -1237,15 +1238,14 @@ async function collectCurrentConversation() {
 
   window.__chatVaultV3Loaded = true;
   const host = location.hostname.toLowerCase();
-  const APP_ORIGINS = new Set([
-    'https://chat-vault.pages.dev',
-    'https://chatvault.nyan-anonymous-d45.workers.dev'
-  ]);
+  const isChatVaultOrigin = location.hostname === 'chat-vault.pages.dev' ||
+    location.hostname.endsWith('.chat-vault.pages.dev') ||
+    location.hostname === 'chatvault.nyan-anonymous-d45.workers.dev';
   const REQUEST_KEY = 'chatvault:browser-extract-request';
   const RESULT_KEY = 'chatvault:browser-extract-result';
 
   // ChatVault tab: receive page requests and relay provider results.
-  if (APP_ORIGINS.has(location.origin)) {
+  if (isChatVaultOrigin) {
     if (typeof GM_addValueChangeListener !== 'function' || typeof GM_setValue !== 'function') {
       console.warn('[ChatVault] Browser JSON handoff requires Tampermonkey GM storage permissions.');
       return;
