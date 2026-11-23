@@ -4,8 +4,8 @@
 // ==UserScript==
 // @name         ChatVault — Export any LLM chat (MD / PDF / ZIP)
 // @namespace    https://github.com/Chimthuwu/chatvault
-// @version      3.2.0
-// @description  Export chats and return normalized JSON to ChatVault from supported share pages.
+// @version      3.3.0
+// @description  Export chats and return normalized JSON to ChatVault with a same-tab round trip.
 // @grant        GM_getValue
 // @grant        GM_setValue
 // @grant        GM_addValueChangeListener
@@ -853,6 +853,99 @@ function beautifyConversation(conv, options = {}) {
   };
 }
 
+
+const PROPOSED_RE = /\b(propose|proposed|suggest|suggested|could|might|maybe|consider|option|idea|would be nice|possibly)\b/i;
+const CONSTRAINT_RE = /\b(must|must not|never|only|requires?|requirement|constraint|keep|preserve|avoid|do not|don't|cannot|can't)\b/i;
+const STATUS_RE = /\b(already|currently|implemented|working|completed|done|built|deployed|verified|tested|existing|supports?)\b/i;
+const QUESTION_RE = /\?|\b(unknown|unclear|not sure|needs? confirmation|open question|pending|blocked|TODO|TBD|not decided|not yet)\b/i;
+
+function extractHandoffLines(text) {
+  let section = 'Conversation';
+  let inCodeFence = false;
+  const buckets = { context: [], decisions: [], proposed: [], constraints: [], status: [], open: [], actions: [] };
+  const seen = new Set();
+  const add = (key, value, source) => {
+    const clean = stripMd(value).replace(/^\s*(?:[-*+]\s+|\d+[.)]\s+)/, '').replace(/\s+/g, ' ').trim();
+    if (clean.length < 8 || clean.length > 420) return;
+    const id = key + ':' + clean.toLowerCase();
+    if (seen.has(id)) return;
+    seen.add(id);
+    buckets[key].push({ value: clean, source });
+  };
+  for (const [index, raw] of String(text).split('\n').entries()) {
+    const heading = raw.match(/^#{1,3}\s+(.+)$/);
+    if (heading) { section = stripMd(heading[1]); continue; }
+    if (!raw.trim()) continue;
+    const trimmed = raw.trim();
+    if (trimmed.startsWith(String.fromCharCode(96).repeat(3)) || trimmed.startsWith('~~~')) { inCodeFence = !inCodeFence; continue; }
+    if (inCodeFence || /^\s*>\s?/.test(raw)) continue;
+    const line = raw.trim();
+    const source = section === 'Conversation' ? 'line ' + (index + 1) : section;
+    if (buckets.context.length < 3 && line.length > 15) add('context', line, source);
+    if (DECISION_RE.test(line) && !PROPOSED_RE.test(line)) add('decisions', line, source);
+    if (PROPOSED_RE.test(line)) add('proposed', line, source);
+    if (CONSTRAINT_RE.test(line)) add('constraints', line, source);
+    if (STATUS_RE.test(line)) add('status', line, source);
+    if (QUESTION_RE.test(line) || /\b(waiting for|depends on|if we|unless)\b/i.test(line)) add('open', line, source);
+    if (/^(?:next(?: step)?s?:|todo:|then\b|implement\b|add\b|fix\b|update\b|build\b|create\b|test\b|verify\b|wire\b|remove\b|replace\b)/i.test(line) || /\b(next step|action item|follow[- ]?up)\b/i.test(line)) add('actions', line, source);
+  }
+  return buckets;
+}
+
+function buildAgentHandoff(input, titleHint = '') {
+  const text = typeof input === 'string' ? input : renderMarkdown(input);
+  const title = titleHint || (typeof input === 'string'
+    ? (text.match(/^#\s+(.+)$/m)?.[1] || 'Conversation handoff')
+    : (input.title || 'Conversation handoff'));
+  const buckets = extractHandoffLines(text);
+  const render = (heading, items) => {
+    const lines = items.slice(0, 10).map(item => '- ' + item.value + ' _(source: ' + item.source + ')_');
+    return '## ' + heading + '\n\n' + (lines.length ? lines.join('\n') : '_No explicit items detected. Check the source transcript before assuming none exist._') + '\n';
+  };
+  const files = [...new Set(text.match(FILE_RE) || [])];
+  const repos = [...new Set(text.match(REPO_RE) || [])];
+  return [
+    '# Agent Handoff — ' + stripMd(title),
+    '',
+    '> Generated locally by ChatVault using extractive rules. This is a briefing aid, not an authoritative interpretation.',
+    '> Verify every item against the source transcript. The generator does not infer implementation status or resolve contradictions.',
+    '',
+    '## Objective & context',
+    '',
+    buckets.context.length ? buckets.context.map(item => '- ' + item.value + ' _(source: ' + item.source + ')_').join('\\n') : 'No concise objective could be extracted automatically. Read the source conversation to establish the actual task and scope.',
+    '',
+    render('Confirmed decisions (explicit language)', buckets.decisions),
+    render('Requirements & constraints (detected wording)', buckets.constraints),
+    render('Current state / progress (detected wording)', buckets.status),
+    render('Proposals & ideas (not automatically approved)', buckets.proposed),
+    render('Open questions, dependencies & blockers', buckets.open),
+    render('Potential next actions (extracted, not prioritised)', buckets.actions),
+    '## Relevant files & repositories',
+    '',
+    files.length || repos.length
+      ? [...files.map(file => '- ' + file), ...repos.map(repo => '- ' + repo)].join('\n')
+      : '_No file paths or repository URLs detected._',
+    '',
+    '## Agent instructions',
+    '',
+    '- Read the relevant source conversation sections before making changes; use the full cleaned transcript when context or exact wording matters.',
+    '- Inspect the current repository state and existing documentation before editing. Do not assume this handoff describes the latest code.',
+    '- Preserve existing user changes. Do not reset, clean, overwrite, or discard unrelated work.',
+    '- Treat proposals as unapproved unless the conversation explicitly confirms them.',
+    '- Do not invent missing requirements, file paths, implementation status, or acceptance criteria. Ask only when a consequential ambiguity blocks safe progress.',
+    '- Make the smallest coherent change, run focused tests, then report what changed, what was actually verified, and what remains unverified.',
+    '',
+    '## Acceptance criteria',
+    '',
+    '_Not inferred. Derive these from explicit requirements in the source conversation and confirm any missing or conflicting criteria before declaring the task complete._',
+    '',
+    '## Source of truth',
+    '',
+    'Attach or provide the matching clean.md (or original transcript) alongside this handoff when the agent needs full chronology, exact examples, code snippets, or disputed context.',
+    ''
+  ].join('\n');
+}
+
 // ---------- extractive intelligence report (no invention, no network) ----------
 
 const DECISION_RE = /\b(decided|decision|agreed|chose|approved|rejected|dropped|we will|going with|final choice)\b/i;
@@ -1269,32 +1362,51 @@ async function collectCurrentConversation() {
   const REQUEST_KEY = 'chatvault:browser-extract-request';
   const RESULT_KEY = 'chatvault:browser-extract-result';
 
-  // ChatVault tab: receive page requests and relay provider results.
+  // ChatVault tab: queue extraction, then receive the result after same-tab return.
   if (isChatVaultOrigin) {
-    if (typeof GM_addValueChangeListener !== 'function' || typeof GM_setValue !== 'function') {
+    if (typeof GM_addValueChangeListener !== 'function' || typeof GM_setValue !== 'function' ||
+        typeof GM_getValue !== 'function') {
       console.warn('[ChatVault] Browser JSON handoff requires Tampermonkey GM storage permissions.');
       return;
     }
-    GM_addValueChangeListener(RESULT_KEY, (_key, _oldValue, result) => {
+    const relayResult = result => {
       if (!result || !result.token) return;
       window.postMessage(Object.assign({ type: 'chatvault:browser-extract-result' }, result), location.origin);
       Promise.resolve(GM_setValue(RESULT_KEY, null)).catch(error =>
         console.warn('[ChatVault] Could not clear transfer result:', error));
-    });
-    window.addEventListener('message', event => {
+    };
+    GM_addValueChangeListener(RESULT_KEY, (_key, _oldValue, result) => relayResult(result));
+    const returnToken = new URLSearchParams(location.hash.slice(1)).get('cv-return');
+    if (returnToken) {
+      Promise.resolve(GM_getValue(RESULT_KEY)).then(result => {
+        if (result && result.token === returnToken) relayResult(result);
+      }).catch(error => console.warn('[ChatVault] Could not read returned extraction:', error));
+    }
+    window.addEventListener('message', async event => {
       if (event.origin !== location.origin) return;
       const request = event.data;
       if (!request || request.type !== 'chatvault:browser-extract-request' ||
-          typeof request.token !== 'string' || typeof request.url !== 'string') return;
-      let target;
-      try { target = new URL(request.url); } catch { return; }
+          typeof request.token !== 'string' || typeof request.url !== 'string' ||
+          typeof request.returnUrl !== 'string') return;
+      let target, returnTarget;
+      try { target = new URL(request.url); returnTarget = new URL(request.returnUrl); } catch { return; }
       const platform = platformForHost(target.hostname);
       if (target.protocol !== 'https:' || target.username || target.password ||
           (target.port && target.port !== '443') || !platform ||
-          !platform.share.test(target.pathname)) return;
-      Promise.resolve(GM_setValue(REQUEST_KEY, {
-        token: request.token, url: target.href, expiresAt: Date.now() + 90000
-      })).catch(error => console.warn('[ChatVault] Could not queue extraction:', error));
+          !platform.share.test(target.pathname) || returnTarget.origin !== location.origin ||
+          new URLSearchParams(returnTarget.hash.slice(1)).get('cv-return') !== request.token) return;
+      try {
+        await Promise.resolve(GM_setValue(REQUEST_KEY, {
+          token: request.token, url: target.href, returnUrl: returnTarget.href,
+          expiresAt: Date.now() + 120000
+        }));
+        window.postMessage({ type: 'chatvault:browser-extract-started', token: request.token }, location.origin);
+      } catch (error) {
+        window.postMessage({
+          type: 'chatvault:browser-extract-result', token: request.token,
+          success: false, error: error && error.message || 'Could not queue browser extraction.'
+        }, location.origin);
+      }
     });
     return;
   }
@@ -1307,22 +1419,28 @@ async function collectCurrentConversation() {
       typeof GM_getValue === 'function' && typeof GM_setValue === 'function') {
     const processingRequests = new Set();
     async function processBrowserRequest(request) {
-      if (!request || !request.token || !request.url ||
+      if (!request || !request.token || !request.url || !request.returnUrl ||
           Number(request.expiresAt) < Date.now() || processingRequests.has(request.token)) return;
-      let target;
-      try { target = new URL(request.url); } catch { return; }
+      let target, returnTarget;
+      try { target = new URL(request.url); returnTarget = new URL(request.returnUrl); } catch { return; }
+      const allowedReturnHost = returnTarget.hostname === 'chat-vault.pages.dev' ||
+        returnTarget.hostname.endsWith('.chat-vault.pages.dev') ||
+        returnTarget.hostname === 'chatvault.nyan-anonymous-d45.workers.dev';
       const requestedPlatform = platformForHost(target.hostname);
       const pagePlatform = detectPagePlatform();
       const requestedId = target.pathname.split('/').filter(Boolean).pop();
       const pageId = location.pathname.split('/').filter(Boolean).pop();
-      if (!requestedPlatform || requestedPlatform.id !== pagePlatform.id ||
+      if (!allowedReturnHost || returnTarget.protocol !== 'https:' ||
+          new URLSearchParams(returnTarget.hash.slice(1)).get('cv-return') !== request.token ||
+          !requestedPlatform || requestedPlatform.id !== pagePlatform.id ||
           !requestedPlatform.share.test(target.pathname) || !requestedId || requestedId !== pageId) return;
 
       processingRequests.add(request.token);
-      let conversation = null;
-      let lastError = null;
+      let result;
       try {
         await new Promise(resolve => setTimeout(resolve, 900));
+        let conversation = null;
+        let lastError = null;
         for (let attempt = 0; attempt < 8; attempt++) {
           try {
             const candidate = await collectCurrentConversation();
@@ -1333,24 +1451,25 @@ async function collectCurrentConversation() {
           } catch (error) { lastError = error; }
           if (attempt < 7) await new Promise(resolve => setTimeout(resolve, 850));
         }
-        const result = conversation
-          ? { token: request.token, success: true, conversation: conversation, sourceUrl: location.href }
+        result = conversation
+          ? { token: request.token, success: true, conversation, sourceUrl: location.href }
           : { token: request.token, success: false, error: lastError && lastError.message || 'No conversation messages were found on the share page.' };
-        const serialized = JSON.stringify(result);
-        if (serialized.length > 3000000) {
-          result.success = false;
-          result.conversation = null;
-          result.error = 'This conversation is too large for the automatic browser handoff. Use the userscript ZIP export and import its JSON file instead.';
+        if (JSON.stringify(result).length > 3000000) {
+          result = { token: request.token, success: false,
+            error: 'This conversation is too large for the automatic browser handoff. Use the userscript ZIP export and import its JSON file instead.' };
         }
-        await Promise.resolve(GM_setValue(RESULT_KEY, result));
       } catch (error) {
-        await Promise.resolve(GM_setValue(RESULT_KEY, {
-          token: request.token, success: false,
-          error: error && error.message || 'Browser extraction failed.'
-        })).catch(() => {});
+        result = { token: request.token, success: false,
+          error: error && error.message || 'Browser extraction failed.' };
+      }
+      try {
+        await Promise.resolve(GM_setValue(RESULT_KEY, result));
+        await Promise.resolve(GM_setValue(REQUEST_KEY, null));
+        location.replace(returnTarget.href);
+      } catch (error) {
+        console.error('[ChatVault] Could not complete same-tab return:', error);
       } finally {
         processingRequests.delete(request.token);
-        await Promise.resolve(GM_setValue(REQUEST_KEY, null)).catch(() => {});
       }
     }
     GM_addValueChangeListener(REQUEST_KEY, (_key, _oldValue, request) => {
