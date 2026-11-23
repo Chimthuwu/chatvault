@@ -14,6 +14,9 @@ function setStatus(message, error = false) {
   el.textContent = message;
   el.classList.toggle('error', error);
 }
+function showResolverFallback(show) {
+  $('resolver-fallback').classList.toggle('hidden', !show);
+}
 function setBusy(busy) {
   $('extract-btn').disabled = busy;
   $('extract-btn').textContent = busy ? 'Working…' : 'Extract conversation';
@@ -80,11 +83,16 @@ async function extract() {
       setStatus('Parsing transcript locally…');
       conv = parseTranscript(input);
     }
-    if (!conv?.messages?.length) throw new Error('No messages were found in that input.');
+    if (!conv?.messages?.length) throw new Error('No messages were found in that input.');\n    showResolverFallback(false);
     loadConversation(conv);
     setStatus(`✓ ${conv.messages.length} messages extracted from ${conv.metadata?.platform || 'import'}. Choose a download below.`);
   } catch (error) {
-    setStatus(error.message || 'Extraction failed.', true);
+    const message = error.message || 'Extraction failed.';
+    const blocked = state.mode === 'url' && /blocked this server-side request|HTTP 403|HTTP 429|platform blocked/i.test(message);
+    showResolverFallback(blocked);
+    setStatus(blocked
+      ? 'Server-side retrieval was blocked by the platform. Use the browser userscript or import a JSON export below.'
+      : message, true);
   } finally {
     setBusy(false);
   }
@@ -146,6 +154,11 @@ async function exportAs(format) {
 }
 
 $('extract-btn').addEventListener('click', extract);
+$('fallback-json').addEventListener('click', () => {
+  setMode('json');
+  $('json-input').focus();
+  $('panel-json').scrollIntoView({ behavior: 'smooth', block: 'center' });
+});
 document.querySelectorAll('[data-export]').forEach(btn => btn.addEventListener('click', () => exportAs(btn.dataset.export)));
 $('copy-btn').addEventListener('click', async () => {
   if (!state.conversation) return setStatus('Extract a conversation first.', true);
