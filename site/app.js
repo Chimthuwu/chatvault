@@ -4,7 +4,7 @@ import {
   downloadBlob, messageToText, roleLabel, slugify, openPrintWindow, extractContinuationReference
 } from './core.js';
 import { makeZip, makePdf, blobBytes } from './archive.js';
-import { beautifyMarkdown, buildIntelligenceReport, buildEditorialPrompt, detectInputType } from './beautify.js';
+import { beautifyMarkdown, buildIntelligenceReport, buildEditorialPrompt, buildAgentHandoff, detectInputType } from './beautify.js';
 
 const $ = id => document.getElementById(id);
 const state = { conversation: null, beautified: null, mode: 'url' };
@@ -423,7 +423,8 @@ function runBeautify() {
     });
     const report = $('opt-report').checked ? buildIntelligenceReport(source) : '';
     const prompt = buildEditorialPrompt(source);
-    state.beautified = { source, beautified, report, prompt, style, conv };
+    const handoff = buildAgentHandoff(source);
+    state.beautified = { source, beautified, report, prompt, handoff, style, conv };
 
     $('before-md').textContent = source;
     $('after-md').textContent = beautified;
@@ -443,7 +444,8 @@ async function downloadBeautifiedArchive() {
     const files = [
       { name: 'original.md', data: result.source },
       { name: result.style + '.md', data: result.beautified },
-      { name: 'editorial-prompt.md', data: result.prompt }
+      { name: 'editorial-prompt.md', data: result.prompt },
+      { name: 'agent-handoff.md', data: result.handoff }
     ];
     if (result.report) files.push({ name: 'intelligence-report.md', data: result.report });
     files.push({ name: 'beautified.pdf', data: await blobBytes(makePdf(textAsConversation(result.beautified, 'Beautified export'))) });
@@ -465,6 +467,11 @@ $('dl-beautified').addEventListener('click', () => {
   if (!state.beautified) return setBeautifyStatus('Beautify a document first.', true);
   downloadBlob(new Blob([state.beautified.beautified], { type: 'text/markdown;charset=utf-8' }), 'chatvault-beautified.md');
   setBeautifyStatus('✓ Beautified Markdown saved.');
+});
+$('dl-agent-handoff').addEventListener('click', () => {
+  if (!state.beautified) return setBeautifyStatus('Beautify a document first.', true);
+  downloadBlob(new Blob([state.beautified.handoff], { type: 'text/markdown;charset=utf-8' }), 'chatvault-agent-handoff.md');
+  setBeautifyStatus('✓ Agent Handoff saved. Give this to your agent; add clean.md when it needs full context.');
 });
 $('copy-beautified').addEventListener('click', async () => {
   if (!state.beautified) return setBeautifyStatus('Beautify a document first.', true);
