@@ -76,7 +76,7 @@ test('platformForHost recognizes supported hosts', () => {
 test('extractContinuationReference detects ChatGPT continuation marker and parent conversation ID', () => {
   const result = extractContinuationReference([{
     role: 'assistant',
-    content: 'Continued from [Assess Script Safety (1)](https://chatgpt.com/c/6b01f552-e394-83ec-8755-4d6d75d412de)'
+    content: [{ type: 'text', text: 'Continued from [Assess Script Safety (1)](https://chatgpt.com/c/6b01f552-e394-83ec-8755-4d6d75d412de)' }]
   }]);
   assert.deepEqual(result, {
     parentId: '6b01f552-e394-83ec-8755-4d6d75d412de',
@@ -86,6 +86,6 @@ test('extractContinuationReference detects ChatGPT continuation marker and paren
 });
 
 test('extractContinuationReference ignores unrelated links and unsafe hosts', () => {
-  assert.equal(extractContinuationReference([{ role: 'assistant', content: 'Continued from [x](https://evil.example/c/abc123)' }]), null);
-  assert.equal(extractContinuationReference([{ role: 'assistant', content: 'See https://chatgpt.com/c/abc123' }]), null);
+  assert.equal(extractContinuationReference([{ role: 'assistant', content: [{ type: 'text', text: 'Continued from [x](https://evil.example/c/abc123)' }] }]), null);
+  assert.equal(extractContinuationReference([{ role: 'assistant', content: [{ type: 'text', text: 'See https://chatgpt.com/c/abc123' }] }]), null);
 });
