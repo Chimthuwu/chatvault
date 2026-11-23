@@ -29,7 +29,7 @@ function setMode(mode) {
     tab.setAttribute('aria-selected', String(active));
   });
   ['url', 'json', 'text'].forEach(m => $('panel-' + m).classList.toggle('hidden', m !== mode));
-  setStatus('Ready when you are ✦');
+  showResolverFallback(false);\n  setStatus('Ready when you are ✦');
 }
 document.querySelectorAll('.tab').forEach(tab => tab.addEventListener('click', () => setMode(tab.dataset.mode)));
 
