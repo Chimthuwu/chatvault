@@ -60,7 +60,7 @@
     <main class="main-area" id="main-content">
       <header class="topbar">
         <div class="breadcrumb"><span>Workspace</span><span class="crumb-slash">/</span><strong>Import</strong></div>
-        <div class="topbar-right"><span class="local-indicator"><i></i> LOCAL-FIRST</span><a class="topbar-github" href="https://github.com/Chimthuwu/chatvault" target="_blank" rel="noopener noreferrer">View source <span>↗</span></a></div>
+        <div class="topbar-right"><span class="local-indicator"><i></i> LOCAL-FIRST</span><button class="setup-link" id="setup-guide" type="button">? Setup guide</button><a class="topbar-github" href="https://github.com/Chimthuwu/chatvault" target="_blank" rel="noopener noreferrer">View source <span>↗</span></a></div>
       </header>
 
       <div class="page-content">
@@ -194,6 +194,60 @@
       </div>
     </main>
   </div>
+  <section class="onboarding hidden" id="onboarding" role="dialog" aria-modal="true" aria-labelledby="onboarding-title" aria-describedby="onboarding-description">
+    <div class="onboarding-backdrop"></div>
+    <div class="onboarding-window">
+      <header class="onboarding-header">
+        <a class="onboarding-brand" href="/" aria-label="ChatVault"><span class="onboarding-brand-mark">✳</span> chat<span>vault</span></a>
+        <div class="onboarding-progress" aria-label="Setup progress"><i data-progress="0"></i><i data-progress="1"></i><i data-progress="2"></i><i data-progress="3"></i></div>
+        <button class="onboarding-close" id="onboarding-close" type="button" aria-label="Close setup">×</button>
+      </header>
+      <div class="onboarding-body">
+        <section class="onboarding-step" data-onboarding-step="0">
+          <div class="onboarding-eyebrow">A BETTER WAY TO KEEP YOUR AI CHATS</div>
+          <h1 id="onboarding-title">Your conversations deserve <em>a home.</em></h1>
+          <p id="onboarding-description" class="onboarding-lede">Meet ChatVault. One tiny browser add-on turns your AI conversations into files you actually own.</p>
+          <div class="cinematic-stage" aria-label="Animation showing a chat being transformed into an archive">
+            <div class="cinematic-orbit orbit-one"></div><div class="cinematic-orbit orbit-two"></div>
+            <div class="cinematic-chat"><div class="cinematic-windowbar"><b></b><b></b><b></b><span>your-ai-chat</span></div><div class="cinematic-bubble user-bubble">Can you help me build this?</div><div class="cinematic-bubble ai-bubble">Absolutely. Let's make it happen.</div><div class="cinematic-cursor">▍</div></div>
+            <div class="cinematic-transfer">✦ <span>CAPTURE</span> <b>→</b></div>
+            <div class="cinematic-archive"><div class="cinematic-file-icon">M↓</div><div class="cinematic-file-lines"><b></b><i></i><i></i><i></i></div><strong>conversation.md</strong><small>SAFE IN YOUR VAULT</small></div>
+            <div class="cinematic-spark spark-a">✳</div><div class="cinematic-spark spark-b">✦</div>
+          </div>
+          <div class="cinematic-caption"><strong>Capture. Preserve. Keep control.</strong><span>Your chats become portable Markdown, PDF, HTML and ZIP archives.</span></div>
+          <div class="onboarding-actions"><button class="btn btn-primary" data-onboarding-next type="button">Show me how <span class="btn-arrow">→</span></button><button class="onboarding-text-button" id="skip-intro" type="button">Skip intro — take me to setup</button></div>
+        </section>
+        <section class="onboarding-step hidden" data-onboarding-step="1">
+          <div class="onboarding-eyebrow">STEP 01 / BROWSER EXTENSION</div>
+          <h2>First, give your browser <em>superpowers.</em></h2>
+          <p class="onboarding-lede">ChatVault uses Tampermonkey to add its little control panel to ChatGPT and other AI chat sites.</p>
+          <div class="onboarding-install-card"><div class="install-number">01</div><div class="install-card-icon">◈</div><div class="install-card-copy"><strong>Install Tampermonkey</strong><span id="browser-install-label">Official browser extension</span><small>Opens the official Tampermonkey installation page in a new tab.</small></div><a class="btn btn-primary btn-small" id="install-manager" href="https://www.tampermonkey.net/" target="_blank" rel="noopener noreferrer">Get extension ↗</a></div>
+          <div class="onboarding-tip"><b>What to do:</b> Add the extension to your browser. If your browser asks, approve the installation and pin/enable Tampermonkey.</div>
+          <label class="onboarding-check"><input id="manager-installed" type="checkbox"><span><strong>I've installed Tampermonkey</strong><small>Already have it? Tick this and carry on.</small></span></label>
+          <div class="onboarding-actions"><button class="btn btn-primary" data-onboarding-next data-requires="manager-installed" type="button" disabled>Next: install ChatVault <span class="btn-arrow">→</span></button><button class="onboarding-text-button" data-onboarding-back type="button">← Back</button></div>
+        </section>
+        <section class="onboarding-step hidden" data-onboarding-step="2">
+          <div class="onboarding-eyebrow">STEP 02 / CHATVAULT USERSCRIPT</div>
+          <h2>Now install <em>the actual magic.</em></h2>
+          <p class="onboarding-lede">This tiny script adds the ChatVault sidebar to supported AI chat websites. It runs in your browser.</p>
+          <div class="onboarding-install-card script-install"><div class="install-number">02</div><div class="install-card-icon">✳</div><div class="install-card-copy"><strong>Install ChatVault</strong><span>Official script · latest version</span><small>Click below. Tampermonkey opens an install screen; press <b>Install</b> or <b>Update</b>.</small></div><a class="btn btn-primary btn-small" id="install-userscript" href="https://raw.githubusercontent.com/Chimthuwu/chatvault/main/userscripts/chatvault.user.js" target="_blank" rel="noopener noreferrer">Install script ↗</a></div>
+          <div class="onboarding-tip"><b>Important:</b> If you see raw code instead of an install screen, Tampermonkey may not be installed/enabled yet. Finish Step 1, then click the script link again.</div>
+          <label class="onboarding-check"><input id="script-installed" type="checkbox"><span><strong>I've clicked Install in Tampermonkey</strong><small>Make sure the script is enabled in the Tampermonkey dashboard.</small></span></label>
+          <div class="onboarding-actions"><button class="btn btn-primary" data-onboarding-next data-requires="script-installed" type="button" disabled>Finish setup <span class="btn-arrow">→</span></button><button class="onboarding-text-button" data-onboarding-back type="button">← Back</button></div>
+        </section>
+        <section class="onboarding-step hidden" data-onboarding-step="3">
+          <div class="onboarding-eyebrow">STEP 03 / YOU'RE READY</div>
+          <h2>Go make something <em>worth keeping.</em></h2>
+          <p class="onboarding-lede">Open a conversation on ChatGPT. Your new vertical ChatVault sidebar should appear on the right.</p>
+          <div class="ready-preview"><div class="ready-chat"><span>chatgpt.com</span><div class="ready-chat-lines"><i></i><i></i><i></i></div><b>Hey, let's build something.</b></div><div class="ready-sidebar"><strong>✳ CHATVAULT</strong><i>↗ ARCHIVE + BEAUTIFY</i><i>⇧ AGENT HANDOFF</i><i>↓ EXPORT</i></div><div class="ready-glow"></div></div>
+          <div class="ready-features"><div><b>↗ Archive + Beautify</b><span>Save the chat and download a polished ZIP.</span></div><div><b>⇧ Agent Handoff</b><span>Download a ready-to-use handoff for another AI agent.</span></div><div><b>▣ Local Library</b><span>Keep imported conversations in this browser.</span></div></div>
+          <div class="onboarding-tip"><b>Can't see the sidebar?</b> Refresh your AI chat tab and check that Tampermonkey and the ChatVault script are enabled.</div>
+          <div class="onboarding-actions"><button class="btn btn-primary" id="finish-onboarding" type="button">Let's go — open ChatGPT ↗</button><button class="onboarding-text-button" id="close-onboarding" type="button">I'll explore ChatVault first</button></div>
+        </section>
+      </div>
+      <footer class="onboarding-footer"><span>NO ACCOUNT · NO API KEY · YOUR ARCHIVES STAY IN YOUR BROWSER</span><button id="onboarding-skip-setup" type="button">Skip setup for now</button></footer>
+    </div>
+  </section>
   <script type="module" src="/app.js"></script>
 </body>
 </html>
