@@ -1507,11 +1507,20 @@ async function collectCurrentConversation() {
   style.id = 'chatvault-style';
   style.textContent = `
     #cv3-toolbar {
-      position: fixed; right: 20px; bottom: 20px; z-index: 2147483000;
-      display: flex; gap: 6px; padding: 7px; border-radius: 13px;
+      position: fixed; right: 16px; bottom: 16px; z-index: 2147483000;
+      display: flex; align-items: center; gap: 6px; padding: 6px; border-radius: 13px;
       background: #101c1b; border: 1px solid #28544c; box-shadow: 0 8px 30px #0009;
       font-family: system-ui, sans-serif;
     }
+    #cv3-toggle {
+      min-width: 42px; min-height: 38px; padding: 8px 11px; border-radius: 9px;
+      border: 1px solid #00dca5; background: #125747; color: #baffea;
+      font: 800 12px system-ui, sans-serif; cursor: pointer; white-space: nowrap;
+    }
+    #cv3-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+    #cv3-toolbar.cv3-collapsed #cv3-actions { display: none; }
+    #cv3-toolbar.cv3-collapsed { padding: 4px; border-radius: 12px; background: #101c1beF; }
+    #cv3-toolbar.cv3-collapsed #cv3-toggle { min-width: 38px; min-height: 34px; }
     #cv3-toolbar button {
       padding: 10px 13px; border-radius: 8px; border: 1px solid #316b5c;
       background: #183b33; color: #70ffcf; font: 700 12px system-ui, sans-serif;
@@ -1533,6 +1542,12 @@ async function collectCurrentConversation() {
 
   const toolbar = document.createElement('div');
   toolbar.id = 'cv3-toolbar';
+  const toggleButton = document.createElement('button');
+  toggleButton.id = 'cv3-toggle';
+  toggleButton.type = 'button';
+  toggleButton.setAttribute('aria-controls', 'cv3-actions');
+  const actions = document.createElement('div');
+  actions.id = 'cv3-actions';
   const statusBox = document.createElement('div');
   statusBox.id = 'cv3-status';
   document.body.append(toolbar, statusBox);
@@ -1554,8 +1569,26 @@ async function collectCurrentConversation() {
     button.textContent = label;
     if (key === 'zip') button.title = 'Markdown + PDF + HTML + JSON in one archive';
     buttons[key] = button;
-    toolbar.appendChild(button);
+    actions.appendChild(button);
   }
+
+  const COLLAPSE_KEY = 'chatvault:toolbar-collapsed';
+  let collapsed = true;
+  try {
+    const saved = localStorage.getItem(COLLAPSE_KEY);
+    if (saved === '0') collapsed = false;
+  } catch {}
+  function setCollapsed(next) {
+    collapsed = Boolean(next);
+    toolbar.classList.toggle('cv3-collapsed', collapsed);
+    toggleButton.textContent = collapsed ? 'CV +' : 'CV −';
+    toggleButton.title = collapsed ? 'Expand ChatVault tools' : 'Collapse ChatVault tools';
+    toggleButton.setAttribute('aria-expanded', String(!collapsed));
+    try { localStorage.setItem(COLLAPSE_KEY, collapsed ? '1' : '0'); } catch {}
+  }
+  toggleButton.addEventListener('click', () => setCollapsed(!collapsed));
+  toolbar.append(toggleButton, actions);
+  setCollapsed(collapsed);
 
   async function beautifyCurrent() {
     status('Beautifying conversation…');
