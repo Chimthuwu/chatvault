@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         ChatVault — Export any LLM chat (MD / PDF / ZIP)
 // @namespace    https://github.com/Chimthuwu/chatvault
-// @version      3.3.0
-// @description  Export chats and return normalized JSON to ChatVault with a same-tab round trip.
+// @version      3.4.0
+// @description  Export chats, automatically retrieve continuations, and return JSON to ChatVault in the same tab.
 // @grant        GM_getValue
 // @grant        GM_setValue
 // @grant        GM_addValueChangeListener
