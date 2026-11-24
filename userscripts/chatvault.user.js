@@ -161,6 +161,25 @@ function toConversation({ id = 'conversation', title = 'Conversation', source = 
 
 
 /**
+ * Normalize ChatGPT continuation suffixes for safe same-title grouping.
+ * Only a trailing numeric copy suffix is removed; unrelated title differences remain.
+ */
+function normalizeConversationTitle(title = '') {
+  return String(title || '')
+    .normalize('NFKC')
+    .replace(/\s+\(\d+\)\s*$/, '')
+    .trim()
+    .replace(/\s+/g, ' ')
+    .toLocaleLowerCase();
+}
+
+function continuationTitlesMatch(a, b) {
+  const left = normalizeConversationTitle(a);
+  const right = normalizeConversationTitle(b);
+  return !!left && left === right;
+}
+
+/**
  * Detect ChatGPT's explicit "Continued from [title](.../c/<id>)" marker.
  * Returns a parent reference only for a valid ChatGPT conversation URL.
  */
@@ -1360,6 +1379,9 @@ async function collectCurrentConversation() {
     location.hostname.endsWith('.chat-vault.pages.dev') ||
     location.hostname === 'chatvault.nyan-anonymous-d45.workers.dev';
   const REQUEST_KEY = 'chatvault:browser-extract-request';
+  const isExtractionTarget = (target, platform) =>
+    platform.share.test(target.pathname) ||
+    (platform.id === 'chatgpt' && /^\/c\/[A-Za-z0-9_-]+\/?$/.test(target.pathname));
   const RESULT_KEY = 'chatvault:browser-extract-result';
 
   // ChatVault tab: queue extraction, then receive the result after same-tab return.
@@ -1393,7 +1415,7 @@ async function collectCurrentConversation() {
       const platform = platformForHost(target.hostname);
       if (target.protocol !== 'https:' || target.username || target.password ||
           (target.port && target.port !== '443') || !platform ||
-          !platform.share.test(target.pathname) || returnTarget.origin !== location.origin ||
+          !isExtractionTarget(target, platform) || returnTarget.origin !== location.origin ||
           new URLSearchParams(returnTarget.hash.slice(1)).get('cv-return') !== request.token) return;
       try {
         await Promise.resolve(GM_setValue(REQUEST_KEY, {
@@ -1433,7 +1455,7 @@ async function collectCurrentConversation() {
       if (!allowedReturnHost || returnTarget.protocol !== 'https:' ||
           new URLSearchParams(returnTarget.hash.slice(1)).get('cv-return') !== request.token ||
           !requestedPlatform || requestedPlatform.id !== pagePlatform.id ||
-          !requestedPlatform.share.test(target.pathname) || !requestedId || requestedId !== pageId) return;
+          !isExtractionTarget(target, requestedPlatform) || !requestedId || requestedId !== pageId) return;
 
       processingRequests.add(request.token);
       let result;
