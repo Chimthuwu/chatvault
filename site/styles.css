@@ -290,3 +290,6 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 
 .archive-export { margin: 8px 0 0 24px; min-height: 27px; padding: 0 9px; border: 1px solid #526d3d; border-radius: 6px; background: #253321; color: var(--acid); font-size: 8px; font-weight: 750; cursor: pointer; }
 .archive-export:hover { border-color: #9ac66b; background: #2d3d27; }
+.archive-detach { display: inline-flex; margin: 7px 0 0 24px; min-height: 25px; padding: 0 9px; border: 1px solid #59604a; border-radius: 6px; background: #20251d; color: #c6d0b8; font-size: 8px; font-weight: 700; cursor: pointer; }
+.archive-detach:hover { border-color: #d2a36c; color: #f0c58e; background: #30271d; }
+.archive-state.separate { color: #d6bd8b; }
