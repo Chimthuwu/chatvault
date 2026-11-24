@@ -9,6 +9,9 @@
     location.hostname.endsWith('.chat-vault.pages.dev') ||
     location.hostname === 'chatvault.nyan-anonymous-d45.workers.dev';
   const REQUEST_KEY = 'chatvault:browser-extract-request';
+  const isExtractionTarget = (target, platform) =>
+    platform.share.test(target.pathname) ||
+    (platform.id === 'chatgpt' && /^\\/c\\/[A-Za-z0-9_-]+\\/?$/.test(target.pathname));
   const RESULT_KEY = 'chatvault:browser-extract-result';
 
   // ChatVault tab: queue extraction, then receive the result after same-tab return.
@@ -42,7 +45,7 @@
       const platform = platformForHost(target.hostname);
       if (target.protocol !== 'https:' || target.username || target.password ||
           (target.port && target.port !== '443') || !platform ||
-          !platform.share.test(target.pathname) || returnTarget.origin !== location.origin ||
+          !isExtractionTarget(target, platform) || returnTarget.origin !== location.origin ||
           new URLSearchParams(returnTarget.hash.slice(1)).get('cv-return') !== request.token) return;
       try {
         await Promise.resolve(GM_setValue(REQUEST_KEY, {
@@ -82,7 +85,7 @@
       if (!allowedReturnHost || returnTarget.protocol !== 'https:' ||
           new URLSearchParams(returnTarget.hash.slice(1)).get('cv-return') !== request.token ||
           !requestedPlatform || requestedPlatform.id !== pagePlatform.id ||
-          !requestedPlatform.share.test(target.pathname) || !requestedId || requestedId !== pageId) return;
+          !isExtractionTarget(target, requestedPlatform) || !requestedId || requestedId !== pageId) return;
 
       processingRequests.add(request.token);
       let result;
