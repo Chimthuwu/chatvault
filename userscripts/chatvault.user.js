@@ -1510,48 +1510,50 @@ async function collectCurrentConversation() {
       position: fixed; top: 50%; right: 8px; transform: translateY(-50%);
       z-index: 2147483000; display: flex; flex-direction: column; align-items: stretch;
       gap: 7px; width: 176px; max-height: min(82vh, 680px); overflow: hidden;
-      padding: 7px; border-radius: 13px; background: rgba(16,28,27,.96);
-      border: 1px solid #28544c; box-shadow: 0 8px 30px #0009;
-      font-family: system-ui, sans-serif; backdrop-filter: blur(12px);
+      padding: 7px; border-radius: 15px;
+      background: linear-gradient(145deg, rgba(19,48,43,.98), rgba(11,24,29,.97) 58%, rgba(30,25,49,.96));
+      border: 1px solid rgba(73,220,181,.48);
+      box-shadow: 0 12px 38px #000a, 0 0 22px rgba(0,220,165,.10), inset 0 1px rgba(255,255,255,.08);
+      font-family: system-ui, sans-serif; backdrop-filter: blur(16px);
+      transition: width .24s ease, padding .24s ease, border-radius .24s ease, box-shadow .24s ease;
     }
+    #cv3-toolbar:hover { box-shadow: 0 14px 42px #000b, 0 0 28px rgba(0,220,165,.18), inset 0 1px rgba(255,255,255,.1); }
     #cv3-toggle {
-      width: 100%; min-height: 36px; padding: 8px 9px; border-radius: 9px;
-      border: 1px solid #00dca5; background: #125747; color: #baffea;
-      font: 800 12px system-ui, sans-serif; cursor: pointer; white-space: nowrap;
+      width: 100%; min-height: 38px; padding: 8px 9px; border-radius: 10px;
+      border: 1px solid rgba(91,255,208,.72); background: linear-gradient(115deg, #12624f, #16866d 55%, #155d70);
+      color: #d4fff2; font: 850 12px system-ui, sans-serif; cursor: pointer; white-space: nowrap;
+      box-shadow: inset 0 1px rgba(255,255,255,.18), 0 3px 12px rgba(0,220,165,.16);
+      transition: transform .18s ease, filter .18s ease, box-shadow .18s ease, border-color .18s ease;
     }
-    #cv3-actions {
-      display: flex; flex-direction: column; flex-wrap: nowrap; gap: 6px;
-      width: 100%; min-height: 0; overflow-y: auto; overscroll-behavior: contain;
-      scrollbar-width: thin; scrollbar-color: #316b5c transparent;
-    }
-    #cv3-toolbar.cv3-collapsed #cv3-actions { display: none; }
-    #cv3-toolbar.cv3-collapsed {
-      width: 49px; padding: 5px; border-radius: 12px; background: rgba(16,28,27,.96);
-    }
-    #cv3-toolbar.cv3-collapsed #cv3-toggle { min-height: 36px; padding: 7px 3px; }
+    #cv3-toggle:hover { transform: translateY(-2px); filter: brightness(1.18) saturate(1.12); border-color: #b4ffe9; box-shadow: 0 6px 18px rgba(0,220,165,.25), inset 0 1px rgba(255,255,255,.24); }
+    #cv3-toggle:active { transform: translateY(0) scale(.98); }
+    #cv3-actions { display:flex; flex-direction:column; flex-wrap:nowrap; gap:6px; width:100%; min-height:0; overflow-y:auto; overscroll-behavior:contain; scrollbar-width:thin; scrollbar-color:#4a9b83 transparent; }
+    #cv3-toolbar.cv3-collapsed #cv3-actions { display:none; }
+    #cv3-toolbar.cv3-collapsed { width:58px; padding:5px; border-radius:14px; background:linear-gradient(145deg,rgba(19,48,43,.98),rgba(22,35,47,.97)); }
+    #cv3-toolbar.cv3-collapsed #cv3-toggle { min-height:42px; padding:7px 3px; font-size:13px; }
     #cv3-toolbar button {
-      flex: 0 0 auto; width: 100%; min-height: 34px; padding: 8px 9px;
-      border-radius: 8px; border: 1px solid #316b5c;
-      background: #183b33; color: #70ffcf; font: 700 10px/1.35 system-ui, sans-serif;
-      cursor: pointer; text-align: left; white-space: normal; overflow-wrap: anywhere;
+      position:relative; isolation:isolate; flex:0 0 auto; width:100%; min-height:36px; padding:8px 9px;
+      border-radius:9px; border:1px solid rgba(87,173,148,.45); background:linear-gradient(115deg,rgba(25,74,62,.98),rgba(21,58,61,.98));
+      color:#a7ffe0; font:750 10px/1.35 system-ui,sans-serif; cursor:pointer; text-align:left; white-space:normal; overflow-wrap:anywhere;
+      box-shadow:inset 0 1px rgba(255,255,255,.07),0 2px 7px rgba(0,0,0,.16);
+      transition:transform .17s ease,background .2s ease,border-color .2s ease,color .2s ease,box-shadow .2s ease,filter .2s ease;
     }
-    #cv3-toolbar button:hover { background: #235548; }
-    #cv3-toolbar button:disabled { opacity: .5; cursor: wait; }
-    #cv3-toolbar #cv3-zip { background: #125747; border-color: #00dca5; }
-    #cv3-toolbar #cv3-beautify { background: #3b2a63; border-color: #b39cff; color: #e2d6ff; }
-    #cv3-toolbar #cv3-archive { background: #174d3d; border-color: #7ee7b1; color: #d7ffea; }
-    #cv3-toolbar #cv3-handoff { background: #34264f; border-color: #aa8aff; color: #e6d9ff; }
-    #cv3-status {
-      position: fixed; right: 194px; top: 50%; bottom: auto; transform: translateY(-50%);
-      z-index: 2147483000; width: min(340px, calc(100vw - 220px)); max-width: 380px;
-      padding: 11px 15px; border-radius: 9px; background: #111a1a;
-      border: 1px solid #28544c; color: #9fffd9; font: 13px/1.5 system-ui, sans-serif;
-      box-shadow: 0 8px 30px #0009; display: none; overflow-wrap: anywhere;
+    #cv3-toolbar button:hover:not(:disabled) { transform:translateX(-3px); filter:brightness(1.15) saturate(1.12); border-color:rgba(148,255,219,.9); color:#effff9; box-shadow:0 5px 16px rgba(0,0,0,.24),0 0 13px rgba(0,220,165,.14),inset 0 1px rgba(255,255,255,.14); }
+    #cv3-toolbar button:active:not(:disabled) { transform:translateX(-1px) scale(.99); }
+    #cv3-toolbar button:focus-visible { outline:2px solid #b8ffe9; outline-offset:2px; }
+    #cv3-toolbar button:disabled { opacity:.58; cursor:wait; }
+    #cv3-toolbar #cv3-zip { background:linear-gradient(110deg,#116b57,#087e75); border-color:#42e6b7; color:#d5fff1; }
+    #cv3-toolbar #cv3-beautify { background:linear-gradient(110deg,#493276,#34275f 60%,#243f69); border-color:#b39cff; color:#eee5ff; }
+    #cv3-toolbar #cv3-archive { background:linear-gradient(110deg,#17634d,#1a795e 55%,#176b73); border-color:#8bf0bd; color:#e2fff0; }
+    #cv3-toolbar #cv3-handoff { background:linear-gradient(110deg,#49316f,#563b83 55%,#304f79); border-color:#c0a5ff; color:#f0e7ff; }
+    #cv3-toolbar #cv3-handoff:hover:not(:disabled) { box-shadow:0 5px 18px rgba(137,100,255,.28),0 0 16px rgba(173,139,255,.2); border-color:#e2d3ff; }
+    #cv3-status { position:fixed; right:194px; top:50%; bottom:auto; transform:translateY(-50%); z-index:2147483000; width:min(340px,calc(100vw - 220px)); max-width:380px; padding:11px 15px; border-radius:11px; background:linear-gradient(135deg,rgba(17,31,31,.98),rgba(17,24,39,.98)); border:1px solid rgba(76,200,163,.52); color:#b4ffe4; font:13px/1.5 system-ui,sans-serif; box-shadow:0 10px 30px #000a,0 0 18px rgba(0,220,165,.1); display:none; overflow-wrap:anywhere; }
+    @media (prefers-reduced-motion:no-preference) {
+      #cv3-toolbar:not(.cv3-collapsed) #cv3-handoff { animation:cv3-soft-pulse 4.5s ease-in-out infinite; }
+      @keyframes cv3-soft-pulse { 0%,100% { box-shadow:inset 0 1px rgba(255,255,255,.07),0 2px 7px rgba(0,0,0,.16); } 50% { box-shadow:inset 0 1px rgba(255,255,255,.12),0 3px 13px rgba(137,100,255,.13); } }
     }
-    @media (max-width: 700px) {
-      #cv3-toolbar { right: 5px; width: 158px; }
-      #cv3-status { right: 172px; width: min(260px, calc(100vw - 190px)); }
-    }
+    @media (prefers-reduced-motion:reduce) { #cv3-toolbar,#cv3-toolbar button,#cv3-toggle { transition:none!important; animation:none!important; } }
+    @media (max-width:700px) { #cv3-toolbar { right:5px; width:158px; } #cv3-status { right:172px; width:min(260px,calc(100vw - 190px)); } }
   `;
   document.head.appendChild(style);
 
@@ -1598,8 +1600,8 @@ async function collectCurrentConversation() {
   const handoffButton = document.createElement('button');
   handoffButton.id = 'cv3-handoff';
   handoffButton.type = 'button';
-  handoffButton.textContent = '⇧ AGENT HANDOFF';
-  handoffButton.title = 'Generate and download a structured agent handoff with the full conversation transcript';
+  handoffButton.textContent = '⧉ COPY AGENT HANDOFF';
+  handoffButton.title = 'Generate the structured agent handoff and copy it to your clipboard';
   actions.insertBefore(handoffButton, archiveButton);
 
   const COLLAPSE_KEY = 'chatvault:toolbar-collapsed';
@@ -1611,7 +1613,7 @@ async function collectCurrentConversation() {
   function setCollapsed(next) {
     collapsed = Boolean(next);
     toolbar.classList.toggle('cv3-collapsed', collapsed);
-    toggleButton.textContent = collapsed ? 'CV +' : 'CV −';
+    toggleButton.textContent = collapsed ? '🗄️ CV +' : '🗄️ CV −';
     toggleButton.title = collapsed ? 'Expand ChatVault tools' : 'Collapse ChatVault tools';
     toggleButton.setAttribute('aria-expanded', String(!collapsed));
     try { localStorage.setItem(COLLAPSE_KEY, collapsed ? '1' : '0'); } catch {}
@@ -1720,7 +1722,7 @@ async function collectCurrentConversation() {
   }
   archiveButton.addEventListener('click', archiveAndBeautify);
 
-  async function downloadAgentHandoff() {
+  async function copyAgentHandoff() {
     if (handoffButton.disabled) return;
     handoffButton.disabled = true;
     try {
@@ -1773,9 +1775,20 @@ async function collectCurrentConversation() {
         transcript.trim(),
         ''
       ].join('\n');
-      const filename = slugify(conv.title || 'conversation', 70) + 'agent-handoff.md';
-      downloadBlob(new Blob(['\uFEFF', handoff], { type: 'text/markdown;charset=utf-8' }), filename);
-      status(`✓ Agent handoff downloaded — ${filename} (${conv.messages.length} messages).`);
+      try {
+        await navigator.clipboard.writeText(handoff);
+      } catch (clipboardError) {
+        const textarea = document.createElement('textarea');
+        textarea.value = handoff;
+        textarea.setAttribute('readonly', '');
+        textarea.style.cssText = 'position:fixed;left:-9999px;top:0;opacity:0;';
+        document.body.appendChild(textarea);
+        textarea.select();
+        const copied = document.execCommand('copy');
+        textarea.remove();
+        if (!copied) throw clipboardError;
+      }
+      status(`✓ Agent handoff copied to clipboard (${conv.messages.length} messages). Paste it straight into your coding agent.`);
     } catch (error) {
       console.error(PREFIX, error);
       status(error.message || 'Could not generate the agent handoff.', true);
@@ -1783,7 +1796,7 @@ async function collectCurrentConversation() {
       handoffButton.disabled = false;
     }
   }
-  handoffButton.addEventListener('click', downloadAgentHandoff);
+  handoffButton.addEventListener('click', copyAgentHandoff);
 
   async function beautifyCurrent() {
     status('Beautifying conversation…');
