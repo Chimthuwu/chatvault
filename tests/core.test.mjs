@@ -85,6 +85,16 @@ test('extractContinuationReference detects ChatGPT continuation marker and paren
   });
 });
 
+test('continuation title matching strips only a trailing numeric continuation suffix', async () => {
+  const { normalizeConversationTitle, continuationTitlesMatch } = await import('../site/core.js');
+  assert.equal(normalizeConversationTitle('  Improve HTML (1)  '), 'improve html');
+  assert.equal(continuationTitlesMatch('Improve HTML (1)', 'Improve HTML'), true);
+  assert.equal(continuationTitlesMatch('Assess Script Safety (1)', 'Assess Script Safety'), true);
+  assert.equal(continuationTitlesMatch('Assess Script Safety (1)', 'Assess Script Safety - notes'), false);
+  assert.equal(continuationTitlesMatch('Improve HTML (1)', 'Improve HTML (2)'), true);
+  assert.equal(continuationTitlesMatch('', 'Untitled'), false);
+});
+
 test('extractContinuationReference ignores unrelated links and unsafe hosts', () => {
   assert.equal(extractContinuationReference([{ role: 'assistant', content: [{ type: 'text', text: 'Continued from [x](https://evil.example/c/abc123)' }] }]), null);
   assert.equal(extractContinuationReference([{ role: 'assistant', content: [{ type: 'text', text: 'See https://chatgpt.com/c/abc123' }] }]), null);
