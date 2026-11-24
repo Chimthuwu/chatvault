@@ -21,14 +21,14 @@ test('generated userscript is self-contained and parses', () => {
   assert.match(source, /function collectCurrentConversation/);
   assert.match(source, /chatvault:toolbar-collapsed/);
   assert.match(source, /cv3-toggle/);
-  assert.match(source, /🗄️ CV \\+/);
+  assert.ok(source.includes('🗄️ CV +'));
   assert.match(source, /prefers-reduced-motion/);
   assert.match(source, /linear-gradient/);
   assert.match(source, /cv3-archive/);
   assert.match(source, /cv3-handoff/);
   assert.match(source, /COPY AGENT HANDOFF/);
   assert.match(source, /copyAgentHandoff/);
-  assert.match(source, /navigator\\.clipboard\\.writeText\\(handoff\\)/);
+  assert.ok(source.includes('navigator.clipboard.writeText(handoff)'));
   assert.match(source, /Full conversation transcript/);
   assert.match(source, /flex-direction: column/);
   assert.match(source, /position: fixed; top: 50%/);
