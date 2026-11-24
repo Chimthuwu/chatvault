@@ -21,6 +21,8 @@ test('generated userscript is self-contained and parses', () => {
   assert.match(source, /function collectCurrentConversation/);
   assert.match(source, /chatvault:toolbar-collapsed/);
   assert.match(source, /cv3-toggle/);
+  assert.match(source, /cv3-archive/);
+  assert.match(source, /ARCHIVE \\+ BEAUTIFY/);
   assert.match(source, /aria-expanded/);
   assert.match(source, /GM_addValueChangeListener/);
   assert.match(source, /https:\/\/\*\.chat-vault\.pages\.dev\/\*/);
@@ -46,6 +48,8 @@ test('share URL imports use the automatic browser JSON handoff', () => {
   assert.match(bridge, /platform\.id === 'chatgpt'/);
   assert.ok(bridge.includes(String.raw`/^\/c\/`));
   assert.match(app, /resolveContinuationAncestors/);
+  assert.match(app, /autoBeautifyImportedConversation/);
+  assert.match(app, /cv-share/);
   assert.match(app, /sessionStorage\.setItem\('chatvault:chain:'/);
   assert.match(app, /continuationTitlesMatch/);
   assert.match(app, /data-detach-continuation/);
