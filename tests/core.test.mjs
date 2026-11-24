@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  normalizeMessages, toConversation, renderMarkdown, renderHtml, parseImport, platformForHost, extractContinuationReference
+  normalizeMessages, toConversation, renderMarkdown, renderHtml, parseImport, platformForHost, extractContinuationReference,
+  normalizeConversationTitle, continuationTitlesMatch
 } from '../site/core.js';
 
 const conv = toConversation({
@@ -83,6 +84,15 @@ test('extractContinuationReference detects ChatGPT continuation marker and paren
     parentTitle: 'Assess Script Safety (1)',
     parentUrl: 'https://chatgpt.com/c/6b01f552-e394-83ec-8755-4d6d75d412de'
   });
+});
+
+test('continuation title matching strips only a trailing numeric continuation suffix', () => {
+  assert.equal(normalizeConversationTitle('  Improve HTML (1)  '), 'improve html');
+  assert.equal(continuationTitlesMatch('Improve HTML (1)', 'Improve HTML'), true);
+  assert.equal(continuationTitlesMatch('Assess Script Safety (1)', 'Assess Script Safety'), true);
+  assert.equal(continuationTitlesMatch('Assess Script Safety (1)', 'Assess Script Safety - notes'), false);
+  assert.equal(continuationTitlesMatch('Improve HTML (1)', 'Improve HTML (2)'), true);
+  assert.equal(continuationTitlesMatch('', 'Untitled'), false);
 });
 
 test('extractContinuationReference ignores unrelated links and unsafe hosts', () => {

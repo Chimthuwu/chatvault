@@ -1,7 +1,7 @@
 // ChatVault web app — all conversions happen locally; only /api/resolve touches the network.
 import {
   toConversation, parseImport, renderMarkdown, renderHtml, platformForHost,
-  downloadBlob, messageToText, roleLabel, slugify, openPrintWindow, extractContinuationReference
+  downloadBlob, messageToText, roleLabel, slugify, openPrintWindow, extractContinuationReference, continuationTitlesMatch
 } from './core.js';
 import { makeZip, makePdf, blobBytes } from './archive.js';
 import { beautifyMarkdown, buildIntelligenceReport, buildEditorialPrompt, buildAgentHandoff, detectInputType } from './beautify.js';
@@ -24,8 +24,14 @@ function showResolverFallback(show) {
 
 function relayBrowserResult(result) {
   if (!result || !state.browserResolver || result.token !== state.browserResolver.token) return;
-  if (state.browserResolver.timeout) window.clearTimeout(state.browserResolver.timeout);
+  const resolver = state.browserResolver;
+  if (resolver.timeout) window.clearTimeout(resolver.timeout);
   state.browserResolver = null;
+  try { sessionStorage.removeItem('chatvault:chain:' + result.token); } catch {}
+  if (resolver.chain) {
+    handleContinuationParentResult(result, resolver.chain);
+    return;
+  }
   if (!result.success || !result.conversation || !Array.isArray(result.conversation.messages) || !result.conversation.messages.length) {
     setStatus(result.error || 'The userscript could not read messages from that share page.', true);
     showResolverFallback(true);
@@ -33,20 +39,26 @@ function relayBrowserResult(result) {
   }
   loadConversation(result.conversation);
   showResolverFallback(false);
-  setStatus('✓ ' + result.conversation.messages.length + ' messages returned to ChatVault in the same tab.');
+  if (!extractContinuationReference(result.conversation.messages)) {
+    setStatus('✓ ' + result.conversation.messages.length + ' messages returned to ChatVault in the same tab.');
+  } else {
+    resolveContinuationAncestors(result.conversation);
+  }
 }
 window.addEventListener('message', event => {
   if (event.origin !== window.location.origin || !event.data) return;
   if (event.data.type === 'chatvault:browser-extract-result') relayBrowserResult(event.data);
   if (event.data.type === 'chatvault:browser-extract-started' &&
       state.browserResolver && event.data.token === state.browserResolver.token) {
-    setStatus('Opening the share page in this tab. ChatVault will return automatically after extraction…');
+    setStatus('Opening the ChatGPT page in this tab. ChatVault will return automatically after extraction…');
     window.location.assign(state.browserResolver.targetUrl);
   }
 });
 const returnedToken = new URLSearchParams(location.hash.slice(1)).get('cv-return');
 if (returnedToken) {
-  state.browserResolver = { token: returnedToken };
+  let chain = null;
+  try { chain = JSON.parse(sessionStorage.getItem('chatvault:chain:' + returnedToken) || 'null'); } catch {}
+  state.browserResolver = { token: returnedToken, chain };
 }
 function setMode(mode) {
   state.mode = mode;
@@ -85,6 +97,132 @@ function parseTranscript(text) {
   });
 }
 
+function requestBrowserExtraction(url, chain = null) {
+  if (state.browserResolver) return false;
+  const token = globalThis.crypto && crypto.randomUUID
+    ? crypto.randomUUID()
+    : 'cv-' + Date.now() + '-' + Math.random().toString(36).slice(2);
+  const returnUrl = location.origin + location.pathname + location.search + '#cv-return=' + encodeURIComponent(token);
+  if (chain) {
+    try { sessionStorage.setItem('chatvault:chain:' + token, JSON.stringify(chain)); }
+    catch {
+      setStatus('Could not preserve the continuation import while navigating. The original conversation is safe; retry the import.', true);
+      return false;
+    }
+  }
+  state.browserResolver = {
+    token, targetUrl: url, chain,
+    timeout: window.setTimeout(() => {
+      if (state.browserResolver?.token !== token) return;
+      state.browserResolver = null;
+      try { sessionStorage.removeItem('chatvault:chain:' + token); } catch {}
+      if (chain) {
+        finishContinuationFlow(chain, 'Automatic retrieval timed out. The imported conversation is safe; its missing parent remains available to retry.');
+      } else {
+        setStatus('The browser handoff timed out. Check that the updated userscript is installed and try again.', true);
+        showResolverFallback(true);
+      }
+    }, 120000)
+  };
+  setStatus(chain ? 'Automatically retrieving the previous conversation…' : 'Preparing same-tab browser extraction…');
+  window.postMessage({ type: 'chatvault:browser-extract-request', token, url, returnUrl }, window.location.origin);
+  return true;
+}
+
+function archiveEntryForConversationId(id) {
+  return readArchive().find(entry => String(entry.conversation?.id) === String(id)) || null;
+}
+
+function resolveContinuationAncestors(conversation, flow = null) {
+  const currentId = String(conversation.id || '');
+  const currentEntry = archiveEntryForConversationId(currentId);
+  if (currentEntry?.detachedFromParent) {
+    if (flow) finishContinuationFlow(flow);
+    return;
+  }
+  const reference = extractContinuationReference(conversation.messages);
+  if (!reference) {
+    if (flow) finishContinuationFlow(flow);
+    return;
+  }
+  const nextFlow = flow || {
+    fetchedIds: [currentId],
+    visitedIds: [currentId],
+    expectedParentId: null
+  };
+  if (nextFlow.visitedIds.includes(reference.parentId)) {
+    finishContinuationFlow(nextFlow, 'A circular continuation reference was detected. No duplicate conversation was added.');
+    return;
+  }
+  if (nextFlow.visitedIds.length >= 25) {
+    finishContinuationFlow(nextFlow, 'The continuation chain reached the 25-conversation safety limit.');
+    return;
+  }
+  nextFlow.visitedIds.push(reference.parentId);
+  const existing = archiveEntryForConversationId(reference.parentId);
+  if (existing) {
+    if (!nextFlow.fetchedIds.includes(String(existing.conversation.id))) nextFlow.fetchedIds.push(String(existing.conversation.id));
+    resolveContinuationAncestors(existing.conversation, nextFlow);
+    return;
+  }
+  nextFlow.expectedParentId = reference.parentId;
+  if (!requestBrowserExtraction(reference.parentUrl, nextFlow)) {
+    finishContinuationFlow(nextFlow, 'Could not start automatic retrieval of the previous conversation.');
+  }
+}
+
+function handleContinuationParentResult(result, flow) {
+  if (!result.success || !result.conversation || !Array.isArray(result.conversation.messages) || !result.conversation.messages.length) {
+    finishContinuationFlow(flow, result.error || 'The previous conversation could not be retrieved. The current conversation has been preserved.');
+    return;
+  }
+  const parent = result.conversation;
+  const expected = String(flow.expectedParentId || '');
+  const sourceId = (() => {
+    try { return new URL(parent.source).pathname.match(/\/c\/([A-Za-z0-9_-]+)/)?.[1] || ''; } catch { return ''; }
+  })();
+  if (expected && String(parent.id) !== expected && sourceId !== expected) {
+    finishContinuationFlow(flow, 'ChatGPT returned a different conversation than the continuation link requested. It was not attached.');
+    return;
+  }
+  saveToArchive(parent);
+  const parentId = String(parent.id || expected);
+  if (!flow.fetchedIds.includes(parentId)) flow.fetchedIds.push(parentId);
+  resolveContinuationAncestors(parent, flow);
+}
+
+function finishContinuationFlow(flow, warning = '') {
+  const entries = readArchive();
+  const conversations = (flow.fetchedIds || [])
+    .map(id => entries.find(entry => String(entry.conversation?.id) === String(id))?.conversation)
+    .filter(Boolean)
+    .reverse();
+  renderArchive();
+  const automatic = conversations.length > 1 &&
+    conversations.every((conversation, index) => index === 0 ||
+      continuationTitlesMatch(conversations[index - 1].title, conversation.title));
+  if (automatic) {
+    const root = conversations[0];
+    const combined = toConversation({
+      id: 'chain-' + String(root.id),
+      title: root.title,
+      source: 'ChatVault automatically assembled continuation chain',
+      messages: conversations.flatMap(conversation => conversation.messages || []),
+      platform: root.metadata?.platform || 'chatgpt',
+      method: 'Automatic continuation assembly',
+      warnings: warning ? [warning] : []
+    });
+    loadConversation(combined, { save: false });
+    setStatus(warning
+      ? 'Retrieved the matching continuation history, but one earlier link needs attention: ' + warning
+      : '✓ Automatically attached ' + (conversations.length - 1) + ' matching continuation(s). ' + combined.messages.length + ' messages are ready to export.');
+  } else if (conversations.length > 1) {
+    setStatus('✓ Retrieved ' + (conversations.length - 1) + ' previous conversation(s). Differently titled chats remain separate and linked in your Local Library.' + (warning ? ' ' + warning : ''));
+  } else if (warning) {
+    setStatus(warning, true);
+  }
+}
+
 function startBrowserExtraction() {
   if (state.browserResolver) return;
   const raw = $('url-input').value.trim();
@@ -107,26 +245,7 @@ function startBrowserExtraction() {
     return;
   }
 
-  const token = globalThis.crypto && crypto.randomUUID
-    ? crypto.randomUUID()
-    : 'cv-' + Date.now() + '-' + Math.random().toString(36).slice(2);
-  const returnUrl = location.origin + location.pathname + location.search + '#cv-return=' + encodeURIComponent(token);
-  state.browserResolver = {
-    token,
-    targetUrl: target.href,
-    timeout: window.setTimeout(() => {
-      state.browserResolver = null;
-      setStatus('The browser handoff timed out. Check that the updated userscript is installed and try again.', true);
-      showResolverFallback(true);
-    }, 120000)
-  };
-  setStatus('Preparing same-tab browser extraction…');
-  window.postMessage({
-    type: 'chatvault:browser-extract-request',
-    token,
-    url: target.href,
-    returnUrl
-  }, window.location.origin);
+  requestBrowserExtraction(target.href);
 }
 async function extract() {
   if (state.mode === 'url') {
@@ -160,7 +279,8 @@ async function extract() {
     }
     if (!conv?.messages?.length) throw new Error('No messages were found in that input.');
     loadConversation(conv);
-    setStatus(`✓ ${conv.messages.length} messages extracted from ${conv.metadata?.platform || 'import'}. Choose a download below.`);
+    resolveContinuationAncestors(conv);
+    if (!extractContinuationReference(conv.messages)) setStatus(`✓ ${conv.messages.length} messages extracted from ${conv.metadata?.platform || 'import'}. Choose a download below.`);
   } catch (error) {
     const message = error.message || 'Extraction failed.';
     const blocked = /platform blocked this server-side request|HTTP 403|HTTP 429/i.test(message);
@@ -214,35 +334,69 @@ function renderArchive() {
   if (!root) return;
   const entries = readArchive();
   if (!entries.length) {
-    root.innerHTML = '<p class="archive-empty">Imported conversations will appear here. Chain relationships are detected from ChatGPT’s “Continued from” reference.</p>';
+    root.innerHTML = '<p class="archive-empty">Imported conversations will appear here. Matching continuations are retrieved and attached automatically.</p>';
     return;
   }
   const byId = new Map(entries.map(entry => [String(entry.conversation.id), entry]));
   const children = new Map();
   for (const entry of entries) {
     const parentId = entry.continuation?.parentId;
-    if (parentId) {
+    if (parentId && !entry.detachedFromParent) {
       if (!children.has(parentId)) children.set(parentId, []);
       children.get(parentId).push(entry);
     }
   }
-  const roots = entries.filter(entry => !entry.continuation || !byId.has(String(entry.continuation.parentId)));
+  const roots = entries.filter(entry => entry.detachedFromParent || !entry.continuation ||
+    !byId.has(String(entry.continuation.parentId)));
   const rendered = new Set();
+  const sameTitleDescendants = entry => {
+    const found = [];
+    const visited = new Set([entry.key]);
+    const walk = parent => {
+      for (const child of children.get(String(parent.conversation.id)) || []) {
+        if (visited.has(child.key) || !continuationTitlesMatch(parent.conversation.title, child.conversation.title)) continue;
+        visited.add(child.key);
+        found.push(child);
+        walk(child);
+      }
+    };
+    walk(entry);
+    return found;
+  };
   const makeNode = (entry, depth = 0) => {
     if (rendered.has(entry.key)) return '';
     rendered.add(entry.key);
     const conv = entry.conversation;
     const title = escapeArchiveText(conv.title || 'Untitled conversation');
-    const count = Number(conv.messages?.length || 0);
-    const childNodes = children.get(String(conv.id)) || [];
-    const missing = entry.continuation && !byId.has(String(entry.continuation.parentId));
-    const marker = missing ? '<span class="archive-state missing">PARENT NOT IMPORTED</span>' : '<span class="archive-state linked">ARCHIVED</span>';
+    const attached = sameTitleDescendants(entry);
+    attached.forEach(child => rendered.add(child.key));
+    const totalMessages = [entry, ...attached].reduce((sum, item) => sum + Number(item.conversation.messages?.length || 0), 0);
+    const distinctChildren = [entry, ...attached].flatMap(parent =>
+      (children.get(String(parent.conversation.id)) || [])
+        .filter(child => !continuationTitlesMatch(parent.conversation.title, child.conversation.title))
+    );
+    const missing = entry.continuation && !entry.detachedFromParent && !byId.has(String(entry.continuation.parentId));
+    const marker = missing
+      ? '<span class="archive-state missing">PARENT NOT RETRIEVED</span>'
+      : attached.length
+        ? '<span class="archive-state linked">AUTO-ATTACHED</span>'
+        : depth > 0
+          ? '<span class="archive-state separate">DIFFERENT TITLE</span>'
+          : '';
+    const detachControls = attached.map(child =>
+      '<button class="archive-detach" type="button" data-detach-continuation="' + escapeArchiveText(child.key) + '">Detach ' +
+      escapeArchiveText(child.conversation.title || 'continuation') + '</button>'
+    ).join('') + (entry.continuation && !entry.detachedFromParent
+      ? '<button class="archive-detach" type="button" data-detach-continuation="' + escapeArchiveText(entry.key) + '">Unlink from previous chat</button>'
+      : '');
     return '<div class="archive-node" style="--depth:' + Math.min(depth, 8) + '">' +
       '<div class="archive-node-main"><span class="archive-branch" aria-hidden="true">↳</span><div class="archive-node-copy"><strong>' + title +
-      '</strong><small>' + count + ' messages · ' + escapeArchiveText(conv.metadata?.platform || 'import') + '</small></div>' + marker + '</div>' +
-      (depth === 0 ? '<button class="archive-export" type="button" data-chain-root="' + escapeArchiveText(entry.key) + '">Export known chain ↓</button>' : '') +
-      (missing ? '<a class="archive-parent-link" href="' + escapeArchiveText(entry.continuation.parentUrl) + '" target="_blank" rel="noopener noreferrer">Open previous conversation ↗</a>' : '') +
-      childNodes.map(child => makeNode(child, depth + 1)).join('') + '</div>';
+      '</strong><small>' + totalMessages + ' messages · ' + escapeArchiveText(conv.metadata?.platform || 'import') +
+      (attached.length ? ' · ' + (attached.length + 1) + ' parts automatically attached' : '') + '</small></div>' + marker + '</div>' +
+      '<button class="archive-export" type="button" data-chain-root="' + escapeArchiveText(entry.key) + '">Export conversation ↓</button>' +
+      detachControls +
+      (missing ? '<a class="archive-parent-link" href="' + escapeArchiveText(entry.continuation.parentUrl) + '" target="_blank" rel="noopener noreferrer">Retry previous conversation ↗</a>' : '') +
+      distinctChildren.map(child => makeNode(child, depth + 1)).join('') + '</div>';
   };
   let markup = roots.map(entry => makeNode(entry)).join('');
   for (const entry of entries) if (!rendered.has(entry.key)) markup += makeNode(entry);
@@ -252,9 +406,9 @@ function escapeArchiveText(value) {
   return String(value ?? '').replace(/[&<>"']/g, char => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[char]));
 }
 
-function loadConversation(conv) {
+function loadConversation(conv, { save = true } = {}) {
   state.conversation = conv;
-  const saved = saveToArchive(conv);
+  const saved = save ? saveToArchive(conv) : true;
   const parent = extractContinuationReference(conv.messages);
   if (parent) setStatus((saved ? '✓ Saved to your local archive. ' : '') + 'Continuation detected: this chat continues “' + parent.parentTitle + '”.');
   $('preview').classList.remove('hidden');
@@ -312,6 +466,21 @@ async function exportAs(format) {
 
 
 $('archive-list').addEventListener('click', event => {
+  const detachButton = event.target.closest('[data-detach-continuation]');
+  if (detachButton) {
+    const entries = readArchive();
+    const entry = entries.find(item => item.key === detachButton.dataset.detachContinuation);
+    if (!entry) return;
+    entry.detachedFromParent = true;
+    try {
+      localStorage.setItem(ARCHIVE_KEY, JSON.stringify(entries));
+      renderArchive();
+      setStatus('✓ Continuation detached. Both source conversations are preserved in your Local Library.');
+    } catch (error) {
+      setStatus('Could not detach this continuation: ' + (error.message || error), true);
+    }
+    return;
+  }
   const button = event.target.closest('[data-chain-root]');
   if (!button) return;
   const entries = readArchive();
@@ -324,7 +493,7 @@ $('archive-list').addEventListener('click', event => {
     if (!entry || visited.has(entry.key)) return;
     visited.add(entry.key);
     ordered.push(entry);
-    const next = entries.filter(candidate => candidate.continuation?.parentId === String(entry.conversation.id))
+    const next = entries.filter(candidate => !candidate.detachedFromParent && candidate.continuation?.parentId === String(entry.conversation.id) && continuationTitlesMatch(entry.conversation.title, candidate.conversation.title))
       .sort((a, b) => a.importedAt.localeCompare(b.importedAt));
     next.forEach(visit);
   };
