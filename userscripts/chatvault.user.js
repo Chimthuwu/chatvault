@@ -1579,6 +1579,7 @@ async function collectCurrentConversation() {
   archiveButton.textContent = '↗ ARCHIVE + BEAUTIFY';
   archiveButton.title = 'Create or reuse a ChatGPT share link, then import and beautify it in ChatVault';
   actions.insertBefore(archiveButton, actions.firstChild);
+  if (detectPagePlatform().id !== 'chatgpt') archiveButton.hidden = true;
 
   const COLLAPSE_KEY = 'chatvault:toolbar-collapsed';
   let collapsed = true;
