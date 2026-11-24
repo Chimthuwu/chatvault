@@ -4,7 +4,9 @@
 // ==UserScript==
 // @name         ChatVault — Export any LLM chat (MD / PDF / ZIP)
 // @namespace    https://github.com/Chimthuwu/chatvault
-// @version      3.6.0
+// @version      3.6.1
+// @updateURL    https://raw.githubusercontent.com/Chimthuwu/chatvault/main/userscripts/chatvault.user.js
+// @downloadURL  https://raw.githubusercontent.com/Chimthuwu/chatvault/main/userscripts/chatvault.user.js
 // @description  Vertical ChatVault sidebar with agent handoff, ChatGPT archive and beautify, exports, and automatic continuation retrieval.
 // @grant        GM_getValue
 // @grant        GM_setValue
@@ -23,7 +25,6 @@
 // @match        https://www.bing.com/chat/*
 // @match        https://chat-vault.pages.dev/*
 // @match        https://*.chat-vault.pages.dev/*
-// @match        https://chatvault.nyan-anonymous-d45.workers.dev/*
 // @noframes
 // @run-at       document-idle
 // ==/UserScript==
@@ -1376,8 +1377,7 @@ async function collectCurrentConversation() {
   window.__chatVaultV3Loaded = true;
   const host = location.hostname.toLowerCase();
   const isChatVaultOrigin = location.hostname === 'chat-vault.pages.dev' ||
-    location.hostname.endsWith('.chat-vault.pages.dev') ||
-    location.hostname === 'chatvault.nyan-anonymous-d45.workers.dev';
+    location.hostname.endsWith('.chat-vault.pages.dev');
   const REQUEST_KEY = 'chatvault:browser-extract-request';
   const isExtractionTarget = (target, platform) =>
     platform.share.test(target.pathname) ||
@@ -1446,8 +1446,7 @@ async function collectCurrentConversation() {
       let target, returnTarget;
       try { target = new URL(request.url); returnTarget = new URL(request.returnUrl); } catch { return; }
       const allowedReturnHost = returnTarget.hostname === 'chat-vault.pages.dev' ||
-        returnTarget.hostname.endsWith('.chat-vault.pages.dev') ||
-        returnTarget.hostname === 'chatvault.nyan-anonymous-d45.workers.dev';
+        returnTarget.hostname.endsWith('.chat-vault.pages.dev');
       const requestedPlatform = platformForHost(target.hostname);
       const pagePlatform = detectPagePlatform();
       const requestedId = target.pathname.split('/').filter(Boolean).pop();
