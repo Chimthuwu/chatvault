@@ -58,6 +58,7 @@ test('share URL imports use the automatic browser JSON handoff', () => {
   assert.match(bridge, /isChatVaultOrigin/);
   assert.match(bridge, /cv3-collapsed/);
   assert.match(bridge, /createOrGetChatGPTShareUrl/);
+  assert.match(bridge, /\\[role="dialog"\\] a\\[href\\]/);
   assert.match(bridge, /chat-vault\\.pages\\.dev/);
   assert.match(bridge, /Expand ChatVault tools/);
 });
