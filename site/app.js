@@ -385,7 +385,7 @@ function renderArchive() {
       '<div class="archive-node-main"><span class="archive-branch" aria-hidden="true">↳</span><div class="archive-node-copy"><strong>' + title +
       '</strong><small>' + totalMessages + ' messages · ' + escapeArchiveText(conv.metadata?.platform || 'import') +
       (attached.length ? ' · ' + (attached.length + 1) + ' parts automatically attached' : '') + '</small></div>' + marker + '</div>' +
-      (depth === 0 ? '<button class="archive-export" type="button" data-chain-root="' + escapeArchiveText(entry.key) + '">Export conversation ↓</button>' : '') +
+      '<button class="archive-export" type="button" data-chain-root="' + escapeArchiveText(entry.key) + '">Export conversation ↓</button>' +
       detachControls +
       (missing ? '<a class="archive-parent-link" href="' + escapeArchiveText(entry.continuation.parentUrl) + '" target="_blank" rel="noopener noreferrer">Retry previous conversation ↗</a>' : '') +
       distinctChildren.map(child => makeNode(child, depth + 1)).join('') + '</div>';
@@ -485,7 +485,7 @@ $('archive-list').addEventListener('click', event => {
     if (!entry || visited.has(entry.key)) return;
     visited.add(entry.key);
     ordered.push(entry);
-    const next = entries.filter(candidate => !candidate.detachedFromParent && candidate.continuation?.parentId === String(entry.conversation.id))
+    const next = entries.filter(candidate => !candidate.detachedFromParent && candidate.continuation?.parentId === String(entry.conversation.id) && continuationTitlesMatch(entry.conversation.title, candidate.conversation.title))
       .sort((a, b) => a.importedAt.localeCompare(b.importedAt));
     next.forEach(visit);
   };
