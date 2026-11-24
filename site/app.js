@@ -7,7 +7,7 @@ import { makeZip, makePdf, blobBytes } from './archive.js';
 import { beautifyMarkdown, buildIntelligenceReport, buildEditorialPrompt, buildAgentHandoff, detectInputType } from './beautify.js';
 
 const $ = id => document.getElementById(id);
-const state = { conversation: null, beautified: null, mode: 'url', browserResolver: null };
+const state = { conversation: null, beautified: null, mode: 'url', browserResolver: null, autoBeautify: false };
 
 function setStatus(message, error = false) {
   const el = $('status');
@@ -41,6 +41,7 @@ function relayBrowserResult(result) {
   showResolverFallback(false);
   if (!extractContinuationReference(result.conversation.messages)) {
     setStatus('✓ ' + result.conversation.messages.length + ' messages returned to ChatVault in the same tab.');
+    if (state.autoBeautify) void autoBeautifyImportedConversation();
   } else {
     resolveContinuationAncestors(result.conversation);
   }
@@ -221,6 +222,7 @@ function finishContinuationFlow(flow, warning = '') {
   } else if (warning) {
     setStatus(warning, true);
   }
+  if (state.autoBeautify) void autoBeautifyImportedConversation();
 }
 
 function startBrowserExtraction() {
@@ -653,5 +655,33 @@ $('copy-beautified').addEventListener('click', async () => {
   } catch { setBeautifyStatus('Clipboard blocked — use the download instead.', true); }
 });
 
+async function autoBeautifyImportedConversation() {
+  if (!state.autoBeautify || !state.conversation) return;
+  state.autoBeautify = false;
+  try {
+    $('beautify-input').value = renderMarkdown(state.conversation);
+    $('beautify-style').value = 'report';
+    $('beautify').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    runBeautify();
+    if (!state.beautified) throw new Error('The conversation was archived, but automatic beautification did not complete.');
+    await downloadBeautifiedArchive();
+    setStatus('✓ Conversation imported, saved to Local Library, beautified and packaged as a ZIP.');
+  } catch (error) {
+    setStatus('Conversation imported and archived, but beautification needs attention: ' + (error.message || error), true);
+  }
+}
+
 // Restore the user's local archive on page load.
-renderArchive(); // Restore
+renderArchive();
+
+// One-click Tampermonkey handoff: ?cv-share=<public share URL>&cv-auto=1
+const toolbarShareUrl = new URLSearchParams(location.search).get('cv-share');
+if (toolbarShareUrl) {
+  state.autoBeautify = new URLSearchParams(location.search).get('cv-auto') === '1';
+  setMode('url');
+  $('url-input').value = toolbarShareUrl;
+  history.replaceState(null, '', location.pathname + location.hash);
+  setStatus('One-click import received. Starting browser-side extraction…');
+  window.setTimeout(() => extract(), 0);
+}
+
