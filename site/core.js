@@ -136,9 +136,9 @@ export function toConversation({ id = 'conversation', title = 'Conversation', so
 export function normalizeConversationTitle(title = '') {
   return String(title || '')
     .normalize('NFKC')
-    .replace(/\\s+\\(\\d+\\)\\s*$/, '')
+    .replace(/\s+\(\d+\)\s*$/, '')
     .trim()
-    .replace(/\\s+/g, ' ')
+    .replace(/\s+/g, ' ')
     .toLocaleLowerCase();
 }
 
