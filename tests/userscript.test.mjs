@@ -41,7 +41,7 @@ test('share URL imports use the automatic browser JSON handoff', () => {
   assert.match(bridge, /location\.replace\(returnTarget\.href\)/);
   assert.match(bridge, /isExtractionTarget/);
   assert.match(bridge, /platform\.id === 'chatgpt'/);
-  assert.ok(bridge.includes(String.raw`/^\\/c\\/`));
+  assert.ok(bridge.includes(String.raw`/^\/c\/`));
   assert.match(app, /resolveContinuationAncestors/);
   assert.match(app, /sessionStorage\.setItem\('chatvault:chain:'/);
   assert.match(app, /continuationTitlesMatch/);
