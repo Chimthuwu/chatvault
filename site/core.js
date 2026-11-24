@@ -130,6 +130,25 @@ export function toConversation({ id = 'conversation', title = 'Conversation', so
 
 
 /**
+ * Normalize ChatGPT continuation suffixes for safe same-title grouping.
+ * Only a trailing numeric copy suffix is removed; unrelated title differences remain.
+ */
+export function normalizeConversationTitle(title = '') {
+  return String(title || '')
+    .normalize('NFKC')
+    .replace(/\\s+\\(\\d+\\)\\s*$/, '')
+    .trim()
+    .replace(/\\s+/g, ' ')
+    .toLocaleLowerCase();
+}
+
+export function continuationTitlesMatch(a, b) {
+  const left = normalizeConversationTitle(a);
+  const right = normalizeConversationTitle(b);
+  return !!left && left === right;
+}
+
+/**
  * Detect ChatGPT's explicit "Continued from [title](.../c/<id>)" marker.
  * Returns a parent reference only for a valid ChatGPT conversation URL.
  */
