@@ -21,7 +21,7 @@ test('generated userscript is self-contained and parses', () => {
   assert.match(source, /function collectCurrentConversation/);
   assert.match(source, /chatvault:toolbar-collapsed/);
   assert.match(source, /cv3-toggle/);
-  assert.ok(source.includes('🗄️ CV +'));
+  assert.ok(source.includes('🔓📜 CV +'));
   assert.match(source, /prefers-reduced-motion/);
   assert.match(source, /linear-gradient/);
   assert.match(source, /cv3-archive/);

@@ -1613,7 +1613,7 @@ async function collectCurrentConversation() {
   function setCollapsed(next) {
     collapsed = Boolean(next);
     toolbar.classList.toggle('cv3-collapsed', collapsed);
-    toggleButton.textContent = collapsed ? '🗄️ CV +' : '🗄️ CV −';
+    toggleButton.textContent = collapsed ? '🔓📜 CV +' : '🔓📜 CV −';
     toggleButton.title = collapsed ? 'Expand ChatVault tools' : 'Collapse ChatVault tools';
     toggleButton.setAttribute('aria-expanded', String(!collapsed));
     try { localStorage.setItem(COLLAPSE_KEY, collapsed ? '1' : '0'); } catch {}
