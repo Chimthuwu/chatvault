@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  normalizeMessages, toConversation, renderMarkdown, renderHtml, parseImport, platformForHost, extractContinuationReference
+  normalizeMessages, toConversation, renderMarkdown, renderHtml, parseImport, platformForHost, extractContinuationReference,
+  normalizeConversationTitle, continuationTitlesMatch
 } from '../site/core.js';
 
 const conv = toConversation({
@@ -85,8 +86,7 @@ test('extractContinuationReference detects ChatGPT continuation marker and paren
   });
 });
 
-test('continuation title matching strips only a trailing numeric continuation suffix', async () => {
-  const { normalizeConversationTitle, continuationTitlesMatch } = await import('../site/core.js');
+test('continuation title matching strips only a trailing numeric continuation suffix', () => {
   assert.equal(normalizeConversationTitle('  Improve HTML (1)  '), 'improve html');
   assert.equal(continuationTitlesMatch('Improve HTML (1)', 'Improve HTML'), true);
   assert.equal(continuationTitlesMatch('Assess Script Safety (1)', 'Assess Script Safety'), true);
