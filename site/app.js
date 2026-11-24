@@ -365,8 +365,10 @@ function renderArchive() {
     const attached = sameTitleDescendants(entry);
     attached.forEach(child => rendered.add(child.key));
     const totalMessages = [entry, ...attached].reduce((sum, item) => sum + Number(item.conversation.messages?.length || 0), 0);
-    const distinctChildren = (children.get(String(conv.id)) || [])
-      .filter(child => !continuationTitlesMatch(conv.title, child.conversation.title));
+    const distinctChildren = [entry, ...attached].flatMap(parent =>
+      (children.get(String(parent.conversation.id)) || [])
+        .filter(child => !continuationTitlesMatch(parent.conversation.title, child.conversation.title))
+    );
     const missing = entry.continuation && !entry.detachedFromParent && !byId.has(String(entry.continuation.parentId));
     const marker = missing
       ? '<span class="archive-state missing">PARENT NOT RETRIEVED</span>'
