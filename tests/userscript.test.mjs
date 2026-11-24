@@ -21,7 +21,13 @@ test('generated userscript is self-contained and parses', () => {
   assert.match(source, /function collectCurrentConversation/);
   assert.match(source, /chatvault:toolbar-collapsed/);
   assert.match(source, /cv3-toggle/);
-  assert.match(source, /cv3-archive/);\n  assert.match(source, /cv3-handoff/);\n  assert.match(source, /AGENT HANDOFF/);\n  assert.match(source, /downloadAgentHandoff/);\n  assert.match(source, /Full conversation transcript/);\n  assert.match(source, /flex-direction: column/);\n  assert.match(source, /position: fixed; top: 50%/);
+  assert.match(source, /cv3-archive/);
+  assert.match(source, /cv3-handoff/);
+  assert.match(source, /AGENT HANDOFF/);
+  assert.match(source, /downloadAgentHandoff/);
+  assert.match(source, /Full conversation transcript/);
+  assert.match(source, /flex-direction: column/);
+  assert.match(source, /position: fixed; top: 50%/);
   assert.match(source, /ARCHIVE \+ BEAUTIFY/);
   assert.match(source, /aria-expanded/);
   assert.match(source, /GM_addValueChangeListener/);
