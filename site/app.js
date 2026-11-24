@@ -154,6 +154,10 @@ function resolveContinuationAncestors(conversation, flow = null) {
     finishContinuationFlow(nextFlow, 'A circular continuation reference was detected. No duplicate conversation was added.');
     return;
   }
+  if (nextFlow.visitedIds.length >= 25) {
+    finishContinuationFlow(nextFlow, 'The continuation chain reached the 25-conversation safety limit.');
+    return;
+  }
   nextFlow.visitedIds.push(reference.parentId);
   const existing = archiveEntryForConversationId(reference.parentId);
   if (existing) {
@@ -162,7 +166,9 @@ function resolveContinuationAncestors(conversation, flow = null) {
     return;
   }
   nextFlow.expectedParentId = reference.parentId;
-  requestBrowserExtraction(reference.parentUrl, nextFlow);
+  if (!requestBrowserExtraction(reference.parentUrl, nextFlow)) {
+    finishContinuationFlow(nextFlow, 'Could not start automatic retrieval of the previous conversation.');
+  }
 }
 
 function handleContinuationParentResult(result, flow) {
