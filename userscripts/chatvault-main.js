@@ -137,36 +137,50 @@
   style.id = 'chatvault-style';
   style.textContent = `
     #cv3-toolbar {
-      position: fixed; right: 16px; bottom: 16px; z-index: 2147483000;
-      display: flex; align-items: center; gap: 6px; padding: 6px; border-radius: 13px;
-      background: #101c1b; border: 1px solid #28544c; box-shadow: 0 8px 30px #0009;
-      font-family: system-ui, sans-serif;
+      position: fixed; top: 50%; right: 8px; transform: translateY(-50%);
+      z-index: 2147483000; display: flex; flex-direction: column; align-items: stretch;
+      gap: 7px; width: 176px; max-height: min(82vh, 680px); overflow: hidden;
+      padding: 7px; border-radius: 13px; background: rgba(16,28,27,.96);
+      border: 1px solid #28544c; box-shadow: 0 8px 30px #0009;
+      font-family: system-ui, sans-serif; backdrop-filter: blur(12px);
     }
     #cv3-toggle {
-      min-width: 42px; min-height: 38px; padding: 8px 11px; border-radius: 9px;
+      width: 100%; min-height: 36px; padding: 8px 9px; border-radius: 9px;
       border: 1px solid #00dca5; background: #125747; color: #baffea;
       font: 800 12px system-ui, sans-serif; cursor: pointer; white-space: nowrap;
     }
-    #cv3-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+    #cv3-actions {
+      display: flex; flex-direction: column; flex-wrap: nowrap; gap: 6px;
+      width: 100%; min-height: 0; overflow-y: auto; overscroll-behavior: contain;
+      scrollbar-width: thin; scrollbar-color: #316b5c transparent;
+    }
     #cv3-toolbar.cv3-collapsed #cv3-actions { display: none; }
-    #cv3-toolbar.cv3-collapsed { padding: 4px; border-radius: 12px; background: #101c1beF; }
-    #cv3-toolbar.cv3-collapsed #cv3-toggle { min-width: 38px; min-height: 34px; }
+    #cv3-toolbar.cv3-collapsed {
+      width: 49px; padding: 5px; border-radius: 12px; background: rgba(16,28,27,.96);
+    }
+    #cv3-toolbar.cv3-collapsed #cv3-toggle { min-height: 36px; padding: 7px 3px; }
     #cv3-toolbar button {
-      padding: 10px 13px; border-radius: 8px; border: 1px solid #316b5c;
-      background: #183b33; color: #70ffcf; font: 700 12px system-ui, sans-serif;
-      cursor: pointer; white-space: nowrap;
+      flex: 0 0 auto; width: 100%; min-height: 34px; padding: 8px 9px;
+      border-radius: 8px; border: 1px solid #316b5c;
+      background: #183b33; color: #70ffcf; font: 700 10px/1.35 system-ui, sans-serif;
+      cursor: pointer; text-align: left; white-space: normal; overflow-wrap: anywhere;
     }
     #cv3-toolbar button:hover { background: #235548; }
     #cv3-toolbar button:disabled { opacity: .5; cursor: wait; }
     #cv3-toolbar #cv3-zip { background: #125747; border-color: #00dca5; }
     #cv3-toolbar #cv3-beautify { background: #3b2a63; border-color: #b39cff; color: #e2d6ff; }
     #cv3-toolbar #cv3-archive { background: #174d3d; border-color: #7ee7b1; color: #d7ffea; }
+    #cv3-toolbar #cv3-handoff { background: #34264f; border-color: #aa8aff; color: #e6d9ff; }
     #cv3-status {
-      position: fixed; right: 20px; bottom: 76px; z-index: 2147483000;
-      max-width: 380px; padding: 11px 15px; border-radius: 9px;
-      background: #111a1a; border: 1px solid #28544c; color: #9fffd9;
-      font: 13px/1.5 system-ui, sans-serif; box-shadow: 0 8px 30px #0009;
-      display: none; overflow-wrap: anywhere;
+      position: fixed; right: 194px; top: 50%; bottom: auto; transform: translateY(-50%);
+      z-index: 2147483000; width: min(340px, calc(100vw - 220px)); max-width: 380px;
+      padding: 11px 15px; border-radius: 9px; background: #111a1a;
+      border: 1px solid #28544c; color: #9fffd9; font: 13px/1.5 system-ui, sans-serif;
+      box-shadow: 0 8px 30px #0009; display: none; overflow-wrap: anywhere;
+    }
+    @media (max-width: 700px) {
+      #cv3-toolbar { right: 5px; width: 158px; }
+      #cv3-status { right: 172px; width: min(260px, calc(100vw - 190px)); }
     }
   `;
   document.head.appendChild(style);
@@ -210,6 +224,13 @@
   archiveButton.title = 'Create or reuse a ChatGPT share link, then import and beautify it in ChatVault';
   actions.insertBefore(archiveButton, actions.firstChild);
   if (detectPagePlatform().id !== 'chatgpt') archiveButton.hidden = true;
+
+  const handoffButton = document.createElement('button');
+  handoffButton.id = 'cv3-handoff';
+  handoffButton.type = 'button';
+  handoffButton.textContent = '⇧ AGENT HANDOFF';
+  handoffButton.title = 'Generate and download a structured agent handoff with the full conversation transcript';
+  actions.insertBefore(handoffButton, archiveButton);
 
   const COLLAPSE_KEY = 'chatvault:toolbar-collapsed';
   let collapsed = true;
@@ -328,6 +349,71 @@
     }
   }
   archiveButton.addEventListener('click', archiveAndBeautify);
+
+  async function downloadAgentHandoff() {
+    if (handoffButton.disabled) return;
+    handoffButton.disabled = true;
+    try {
+      status('Reading the conversation and preparing agent handoff…');
+      const conv = await collectCurrentConversation();
+      if (!conv || !Array.isArray(conv.messages) || !conv.messages.length) {
+        throw new Error('No conversation messages were found on this page.');
+      }
+      const userMessages = conv.messages.filter(message => message.role === 'user');
+      const firstRequest = userMessages.length ? messageToText(userMessages[0]) : '';
+      const requestIndex = userMessages.map((message, index) => ({ message, index }))
+        .filter(({ message }) => messageToText(message).trim().length);
+      const requestOutline = requestIndex.map(({ message }, index) => {
+        const excerpt = messageToText(message).replace(/\s+/g, ' ').trim();
+        return `${index + 1}. ${excerpt.length > 420 ? excerpt.slice(0, 417) + '…' : excerpt}`;
+      });
+      const transcript = renderMarkdown(conv);
+      const handoff = [
+        `# Agent Handoff — ${conv.title || 'Untitled conversation'}`,
+        '',
+        '> Generated by ChatVault. This document preserves the conversation as source context; it does not claim that unverified work is complete.',
+        '',
+        '## Task objective',
+        '',
+        firstRequest ? firstRequest : 'Infer the current task from the conversation transcript below.',
+        '',
+        '## Conversation details',
+        '',
+        `- **Conversation:** ${conv.title || 'Untitled conversation'}`,
+        `- **Platform:** ${conv.metadata?.platform || 'Unknown'}`,
+        `- **Source:** ${conv.source || location.href}`,
+        `- **Messages captured:** ${conv.messages.length}`,
+        `- **Generated:** ${new Date().toISOString()}`,
+        '',
+        '## User requests and direction',
+        '',
+        ...(requestOutline.length ? requestOutline : ['- No user messages could be summarized from the extracted conversation.']),
+        '',
+        '## Instructions for the receiving agent',
+        '',
+        '1. Read the complete transcript before acting; later messages may revise or supersede earlier requirements.',
+        '2. Identify the current objective, explicit constraints, decisions, completed work, unresolved issues, and the most recent requested next step.',
+        '3. Treat statements about implementation, tests, deployments, and merges as claims to verify against the actual repository or environment before relying on them.',
+        '4. Continue the work directly where tools and access permit. Do not merely write another handoff or ask the user to repeat context already present here.',
+        '5. Preserve existing user changes and working state. Avoid destructive resets, broad cleanup, or unrelated refactors.',
+        '6. If a required action cannot be completed, explain exactly what is blocked and what remains unverified.',
+        '',
+        '## Full conversation transcript',
+        '',
+        transcript.trim(),
+        ''
+      ].join('\n');
+      const filename = slugify(conv.title || 'conversation', 70) + 'agent-handoff.md';
+      downloadBlob(new Blob(['\uFEFF', handoff], { type: 'text/markdown;charset=utf-8' }), filename);
+      status(`✓ Agent handoff downloaded — ${filename} (${conv.messages.length} messages).`);
+    } catch (error) {
+      console.error(PREFIX, error);
+      status(error.message || 'Could not generate the agent handoff.', true);
+    } finally {
+      handoffButton.disabled = false;
+    }
+  }
+  handoffButton.addEventListener('click', downloadAgentHandoff);
 
   async function beautifyCurrent() {
     status('Beautifying conversation…');
