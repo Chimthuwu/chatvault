@@ -6,8 +6,7 @@
   window.__chatVaultV3Loaded = true;
   const host = location.hostname.toLowerCase();
   const isChatVaultOrigin = location.hostname === 'chat-vault.pages.dev' ||
-    location.hostname.endsWith('.chat-vault.pages.dev') ||
-    location.hostname === 'chatvault.nyan-anonymous-d45.workers.dev';
+    location.hostname.endsWith('.chat-vault.pages.dev');
   const REQUEST_KEY = 'chatvault:browser-extract-request';
   const isExtractionTarget = (target, platform) =>
     platform.share.test(target.pathname) ||
@@ -76,8 +75,7 @@
       let target, returnTarget;
       try { target = new URL(request.url); returnTarget = new URL(request.returnUrl); } catch { return; }
       const allowedReturnHost = returnTarget.hostname === 'chat-vault.pages.dev' ||
-        returnTarget.hostname.endsWith('.chat-vault.pages.dev') ||
-        returnTarget.hostname === 'chatvault.nyan-anonymous-d45.workers.dev';
+        returnTarget.hostname.endsWith('.chat-vault.pages.dev');
       const requestedPlatform = platformForHost(target.hostname);
       const pagePlatform = detectPagePlatform();
       const requestedId = target.pathname.split('/').filter(Boolean).pop();
