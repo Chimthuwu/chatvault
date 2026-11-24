@@ -235,7 +235,7 @@
     return !!(element && (element.offsetWidth || element.offsetHeight || element.getClientRects().length));
   }
   function readShareUrl() {
-    const candidates = [...document.querySelectorAll('[role="dialog"] a[href], [role="dialog"] input, [role="dialog"] textarea, a[href*="/share/"]')];
+    const candidates = [...document.querySelectorAll('[role="dialog"] a[href], [role="dialog"] input, [role="dialog"] textarea')];
     for (const element of candidates) {
       const value = element.href || element.value || element.getAttribute('value') || '';
       try {
@@ -256,7 +256,7 @@
     return '';
   }
   function findShareAction(labels) {
-    const buttons = [...document.querySelectorAll('[role="dialog"] button, button')].filter(visibleElement);
+    const buttons = [...document.querySelectorAll('[role="dialog"] button, [role="dialog"] [role="button"], button')].filter(visibleElement);
     return buttons.find(button => {
       const label = [button.innerText, button.textContent, button.getAttribute('aria-label'),
         button.getAttribute('data-testid'), button.title].filter(Boolean).join(' ').replace(/\s+/g, ' ').trim();
@@ -269,7 +269,7 @@
     }
     const existing = readShareUrl();
     if (existing) return existing;
-    const shareButton = [...document.querySelectorAll('button')].find(button => {
+    const shareButton = [...document.querySelectorAll('button, [role="button"]')].find(button => {
       if (!visibleElement(button)) return false;
       const label = [button.innerText, button.getAttribute('aria-label'), button.title, button.dataset.testid]
         .filter(Boolean).join(' ').trim();
