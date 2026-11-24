@@ -665,6 +665,9 @@ async function autoBeautifyImportedConversation() {
     runBeautify();
     if (!state.beautified) throw new Error('The conversation was archived, but automatic beautification did not complete.');
     await downloadBeautifiedArchive();
+    if (!$('beautify-status').textContent.startsWith('✓')) {
+      throw new Error($('beautify-status').textContent || 'The ZIP archive could not be created.');
+    }
     setStatus('✓ Conversation imported, saved to Local Library, beautified and packaged as a ZIP.');
   } catch (error) {
     setStatus('Conversation imported and archived, but beautification needs attention: ' + (error.message || error), true);
