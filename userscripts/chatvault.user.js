@@ -1609,8 +1609,8 @@ async function collectCurrentConversation() {
       const value = element.href || element.value || element.getAttribute('value') || '';
       try {
         const url = new URL(value, location.href);
-        if (url.protocol === 'https:' && /(^|\\.)chatgpt\\.com$/.test(url.hostname) &&
-            /^\\/share\\/[A-Za-z0-9_-]+/.test(url.pathname)) return url.href;
+        if (url.protocol === 'https:' && /(^|\.)chatgpt\.com$/.test(url.hostname) &&
+            /^\/share\/[A-Za-z0-9_-]+/.test(url.pathname)) return url.href;
       } catch {}
     }
     return '';
@@ -1628,7 +1628,7 @@ async function collectCurrentConversation() {
     const buttons = [...document.querySelectorAll('[role="dialog"] button, button')].filter(visibleElement);
     return buttons.find(button => {
       const label = [button.innerText, button.textContent, button.getAttribute('aria-label'),
-        button.getAttribute('data-testid'), button.title].filter(Boolean).join(' ').replace(/\\s+/g, ' ').trim();
+        button.getAttribute('data-testid'), button.title].filter(Boolean).join(' ').replace(/\s+/g, ' ').trim();
       return labels.some(pattern => pattern.test(label));
     });
   }
@@ -1642,20 +1642,20 @@ async function collectCurrentConversation() {
       if (!visibleElement(button)) return false;
       const label = [button.innerText, button.getAttribute('aria-label'), button.title, button.dataset.testid]
         .filter(Boolean).join(' ').trim();
-      return /(^|\\b)share(\\b|$)/i.test(label) && !/shared link/i.test(label);
+      return /(^|\b)share(\b|$)/i.test(label) && !/shared link/i.test(label);
     });
     if (!shareButton) throw new Error('Could not find ChatGPT’s Share button. Open the conversation fully and try again.');
     shareButton.click();
     await sleep(350);
     let link = await waitForShareUrl(900);
     if (link) return link;
-    const createButton = findShareAction([/create\\s+(a\\s+)?link/i, /create\\s+shared\\s+link/i, /share\\s+link/i]);
+    const createButton = findShareAction([/create\s+(a\s+)?link/i, /create\s+shared\s+link/i, /share\s+link/i]);
     if (createButton) {
       createButton.click();
       link = await waitForShareUrl(12000);
       if (link) return link;
     }
-    const copyButton = findShareAction([/copy\\s+link/i, /copy\\s+shared\\s+link/i]);
+    const copyButton = findShareAction([/copy\s+link/i, /copy\s+shared\s+link/i]);
     if (copyButton) {
       copyButton.click();
       await sleep(350);
@@ -1664,8 +1664,8 @@ async function collectCurrentConversation() {
       try {
         const clipboard = await navigator.clipboard.readText();
         const url = new URL(clipboard.trim());
-        if (url.protocol === 'https:' && /(^|\\.)chatgpt\\.com$/.test(url.hostname) &&
-            /^\\/share\\/[A-Za-z0-9_-]+/.test(url.pathname)) return url.href;
+        if (url.protocol === 'https:' && /(^|\.)chatgpt\.com$/.test(url.hostname) &&
+            /^\/share\/[A-Za-z0-9_-]+/.test(url.pathname)) return url.href;
       } catch {}
     }
     throw new Error('ChatGPT did not expose a share URL. Check the Share dialog and try again.');
