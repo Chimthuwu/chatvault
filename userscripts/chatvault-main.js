@@ -11,7 +11,7 @@
   const REQUEST_KEY = 'chatvault:browser-extract-request';
   const isExtractionTarget = (target, platform) =>
     platform.share.test(target.pathname) ||
-    (platform.id === 'chatgpt' && /^\\/c\\/[A-Za-z0-9_-]+\\/?$/.test(target.pathname));
+    (platform.id === 'chatgpt' && /^\/c\/[A-Za-z0-9_-]+\/?$/.test(target.pathname));
   const RESULT_KEY = 'chatvault:browser-extract-result';
 
   // ChatVault tab: queue extraction, then receive the result after same-tab return.
