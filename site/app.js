@@ -688,3 +688,84 @@ if (toolbarShareUrl) {
   window.setTimeout(() => extract(), 0);
 }
 
+
+
+/* First-visit setup walkthrough. Extension installation is confirmed by the user:
+   browser APIs intentionally do not attempt to fingerprint installed extensions. */
+const ONBOARDING_KEY = 'chatvault:onboarding:v1';
+const onboarding = $('onboarding');
+let onboardingStep = 0;
+let onboardingPreviousFocus = null;
+function browserInstallTarget() {
+  const ua = navigator.userAgent || '';
+  if (/Edg\//.test(ua)) return { name: 'Microsoft Edge', url: 'https://www.tampermonkey.net/index.php?browser=edge' };
+  if (/Firefox\//.test(ua)) return { name: 'Firefox', url: 'https://www.tampermonkey.net/index.php?browser=firefox' };
+  if (/Chrome\//.test(ua) && !/Edg\//.test(ua)) return { name: 'Google Chrome', url: 'https://www.tampermonkey.net/index.php?browser=chrome' };
+  if (/Safari\//.test(ua) && !/Chrome\//.test(ua)) return { name: 'Safari', url: 'https://www.tampermonkey.net/index.php?browser=safari' };
+  return { name: 'your browser', url: 'https://www.tampermonkey.net/' };
+}
+function showOnboardingStep(step) {
+  onboardingStep = Math.max(0, Math.min(3, step));
+  onboarding.querySelectorAll('[data-onboarding-step]').forEach(panel => {
+    panel.classList.toggle('hidden', Number(panel.dataset.onboardingStep) !== onboardingStep);
+  });
+  onboarding.querySelectorAll('[data-progress]').forEach(item => {
+    item.classList.toggle('active', Number(item.dataset.progress) <= onboardingStep);
+  });
+  const activeHeading = onboarding.querySelector('[data-onboarding-step="' + onboardingStep + '"] h1, [data-onboarding-step="' + onboardingStep + '"] h2');
+  if (activeHeading) onboarding.querySelector('.onboarding-body').setAttribute('aria-label', activeHeading.textContent);
+}
+function openOnboarding() {
+  onboardingPreviousFocus = document.activeElement;
+  onboarding.classList.remove('hidden');
+  document.body.classList.add('onboarding-open');
+  showOnboardingStep(0);
+  $('onboarding-close').focus();
+}
+function closeOnboarding({ completed = false } = {}) {
+  onboarding.classList.add('hidden');
+  document.body.classList.remove('onboarding-open');
+  try { localStorage.setItem(ONBOARDING_KEY, completed ? 'completed' : 'dismissed'); } catch {}
+  if (onboardingPreviousFocus?.focus) onboardingPreviousFocus.focus();
+}
+function updateOnboardingGates() {
+  onboarding.querySelectorAll('[data-requires]').forEach(button => {
+    button.disabled = !$(button.dataset.requires).checked;
+  });
+}
+const managerTarget = browserInstallTarget();
+$('install-manager').href = managerTarget.url;
+$('browser-install-label').textContent = managerTarget.name + ' · official extension';
+$('manager-installed').addEventListener('change', updateOnboardingGates);
+$('script-installed').addEventListener('change', updateOnboardingGates);
+onboarding.querySelectorAll('[data-onboarding-next]').forEach(button => button.addEventListener('click', () => {
+  if (button.dataset.requires && !$(button.dataset.requires).checked) return;
+  showOnboardingStep(onboardingStep + 1);
+}));
+onboarding.querySelectorAll('[data-onboarding-back]').forEach(button => button.addEventListener('click', () => showOnboardingStep(onboardingStep - 1)));
+$('skip-intro').addEventListener('click', () => showOnboardingStep(1));
+$('onboarding-close').addEventListener('click', () => closeOnboarding());
+$('onboarding-skip-setup').addEventListener('click', () => closeOnboarding());
+$('close-onboarding').addEventListener('click', () => closeOnboarding({ completed: true }));
+$('finish-onboarding').addEventListener('click', () => {
+  closeOnboarding({ completed: true });
+  window.open('https://chatgpt.com/', '_blank', 'noopener,noreferrer');
+});
+$('setup-guide').addEventListener('click', openOnboarding);
+onboarding.addEventListener('click', event => {
+  if (event.target.classList.contains('onboarding-backdrop')) closeOnboarding();
+});
+document.addEventListener('keydown', event => {
+  if (onboarding.classList.contains('hidden')) return;
+  if (event.key === 'Escape') { closeOnboarding(); return; }
+  if (event.key !== 'Tab') return;
+  const focusable = [...onboarding.querySelectorAll('a[href],button:not(:disabled),input:not(:disabled)')].filter(el => el.offsetParent !== null);
+  if (!focusable.length) return;
+  const first = focusable[0], last = focusable[focusable.length - 1];
+  if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+  else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+});
+let onboardingChoice = null;
+try { onboardingChoice = localStorage.getItem(ONBOARDING_KEY); } catch {}
+const isHandoffArrival = new URLSearchParams(location.search).has('cv-share');
+if (!onboardingChoice && !isHandoffArrival) window.setTimeout(openOnboarding, 350);
