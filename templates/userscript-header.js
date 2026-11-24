@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         ChatVault — Export any LLM chat (MD / PDF / ZIP)
 // @namespace    https://github.com/Chimthuwu/chatvault
-// @version      3.4.0
-// @description  Export chats, automatically retrieve continuations, and return JSON to ChatVault in the same tab.
+// @version      3.5.0
+// @description  One-click ChatGPT share-link archive and beautify, exports, and automatic continuation retrieval.
 // @grant        GM_getValue
 // @grant        GM_setValue
 // @grant        GM_addValueChangeListener

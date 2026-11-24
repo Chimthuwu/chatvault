@@ -11,7 +11,7 @@ const bridgeFile = fileURLToPath(new URL('../userscripts/chatvault-main.js', imp
 test('generated userscript is self-contained and parses', () => {
   const source = readFileSync(file, 'utf8');
   assert.match(source, /\/\/ ==UserScript==/);
-  assert.match(source, /@version\s+3.4.0/);
+  assert.match(source, /@version\s+3.5.0/);
   for (const host of ['chatgpt.com', 'claude.ai', 'gemini.google.com', 'g.co', 'grok.com', 'chat.deepseek.com', 'perplexity.ai', 'copilot.microsoft.com']) {
     assert.ok(source.includes(host), `missing @match host: ${host}`);
   }
@@ -19,6 +19,11 @@ test('generated userscript is self-contained and parses', () => {
   assert.doesNotMatch(source, /^import\s/m);
   assert.match(source, /function makeZip/);
   assert.match(source, /function collectCurrentConversation/);
+  assert.match(source, /chatvault:toolbar-collapsed/);
+  assert.match(source, /cv3-toggle/);
+  assert.match(source, /cv3-archive/);
+  assert.match(source, /ARCHIVE \+ BEAUTIFY/);
+  assert.match(source, /aria-expanded/);
   assert.match(source, /GM_addValueChangeListener/);
   assert.match(source, /https:\/\/\*\.chat-vault\.pages\.dev\/\*/);
   assert.match(source, /isChatVaultOrigin/);
@@ -43,10 +48,17 @@ test('share URL imports use the automatic browser JSON handoff', () => {
   assert.match(bridge, /platform\.id === 'chatgpt'/);
   assert.ok(bridge.includes(String.raw`/^\/c\/`));
   assert.match(app, /resolveContinuationAncestors/);
+  assert.match(app, /autoBeautifyImportedConversation/);
+  assert.match(app, /cv-share/);
   assert.match(app, /sessionStorage\.setItem\('chatvault:chain:'/);
   assert.match(app, /continuationTitlesMatch/);
   assert.match(app, /data-detach-continuation/);
   assert.match(bridge, /GM_getValue\(RESULT_KEY\)/);
   assert.doesNotMatch(bridge, /event\.source !== window/);
   assert.match(bridge, /isChatVaultOrigin/);
+  assert.match(bridge, /cv3-collapsed/);
+  assert.match(bridge, /createOrGetChatGPTShareUrl/);
+  assert.match(bridge, /\[role="dialog"\] a\[href\]/);
+  assert.match(bridge, /chat-vault\.pages\.dev/);
+  assert.match(bridge, /Expand ChatVault tools/);
 });

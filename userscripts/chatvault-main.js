@@ -137,11 +137,20 @@
   style.id = 'chatvault-style';
   style.textContent = `
     #cv3-toolbar {
-      position: fixed; right: 20px; bottom: 20px; z-index: 2147483000;
-      display: flex; gap: 6px; padding: 7px; border-radius: 13px;
+      position: fixed; right: 16px; bottom: 16px; z-index: 2147483000;
+      display: flex; align-items: center; gap: 6px; padding: 6px; border-radius: 13px;
       background: #101c1b; border: 1px solid #28544c; box-shadow: 0 8px 30px #0009;
       font-family: system-ui, sans-serif;
     }
+    #cv3-toggle {
+      min-width: 42px; min-height: 38px; padding: 8px 11px; border-radius: 9px;
+      border: 1px solid #00dca5; background: #125747; color: #baffea;
+      font: 800 12px system-ui, sans-serif; cursor: pointer; white-space: nowrap;
+    }
+    #cv3-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+    #cv3-toolbar.cv3-collapsed #cv3-actions { display: none; }
+    #cv3-toolbar.cv3-collapsed { padding: 4px; border-radius: 12px; background: #101c1beF; }
+    #cv3-toolbar.cv3-collapsed #cv3-toggle { min-width: 38px; min-height: 34px; }
     #cv3-toolbar button {
       padding: 10px 13px; border-radius: 8px; border: 1px solid #316b5c;
       background: #183b33; color: #70ffcf; font: 700 12px system-ui, sans-serif;
@@ -151,6 +160,7 @@
     #cv3-toolbar button:disabled { opacity: .5; cursor: wait; }
     #cv3-toolbar #cv3-zip { background: #125747; border-color: #00dca5; }
     #cv3-toolbar #cv3-beautify { background: #3b2a63; border-color: #b39cff; color: #e2d6ff; }
+    #cv3-toolbar #cv3-archive { background: #174d3d; border-color: #7ee7b1; color: #d7ffea; }
     #cv3-status {
       position: fixed; right: 20px; bottom: 76px; z-index: 2147483000;
       max-width: 380px; padding: 11px 15px; border-radius: 9px;
@@ -163,6 +173,12 @@
 
   const toolbar = document.createElement('div');
   toolbar.id = 'cv3-toolbar';
+  const toggleButton = document.createElement('button');
+  toggleButton.id = 'cv3-toggle';
+  toggleButton.type = 'button';
+  toggleButton.setAttribute('aria-controls', 'cv3-actions');
+  const actions = document.createElement('div');
+  actions.id = 'cv3-actions';
   const statusBox = document.createElement('div');
   statusBox.id = 'cv3-status';
   document.body.append(toolbar, statusBox);
@@ -184,8 +200,134 @@
     button.textContent = label;
     if (key === 'zip') button.title = 'Markdown + PDF + HTML + JSON in one archive';
     buttons[key] = button;
-    toolbar.appendChild(button);
+    actions.appendChild(button);
   }
+
+  const archiveButton = document.createElement('button');
+  archiveButton.id = 'cv3-archive';
+  archiveButton.type = 'button';
+  archiveButton.textContent = '↗ ARCHIVE + BEAUTIFY';
+  archiveButton.title = 'Create or reuse a ChatGPT share link, then import and beautify it in ChatVault';
+  actions.insertBefore(archiveButton, actions.firstChild);
+  if (detectPagePlatform().id !== 'chatgpt') archiveButton.hidden = true;
+
+  const COLLAPSE_KEY = 'chatvault:toolbar-collapsed';
+  let collapsed = true;
+  try {
+    const saved = localStorage.getItem(COLLAPSE_KEY);
+    if (saved === '0') collapsed = false;
+  } catch {}
+  function setCollapsed(next) {
+    collapsed = Boolean(next);
+    toolbar.classList.toggle('cv3-collapsed', collapsed);
+    toggleButton.textContent = collapsed ? 'CV +' : 'CV −';
+    toggleButton.title = collapsed ? 'Expand ChatVault tools' : 'Collapse ChatVault tools';
+    toggleButton.setAttribute('aria-expanded', String(!collapsed));
+    try { localStorage.setItem(COLLAPSE_KEY, collapsed ? '1' : '0'); } catch {}
+  }
+  toggleButton.addEventListener('click', () => setCollapsed(!collapsed));
+  toolbar.append(toggleButton, actions);
+  setCollapsed(collapsed);
+
+  const CHATVAULT_HOME = 'https://chat-vault.pages.dev/';
+  const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+  function visibleElement(element) {
+    return !!(element && (element.offsetWidth || element.offsetHeight || element.getClientRects().length));
+  }
+  function readShareUrl() {
+    const candidates = [...document.querySelectorAll('[role="dialog"] a[href], [role="dialog"] input, [role="dialog"] textarea')];
+    for (const element of candidates) {
+      const value = element.href || element.value || element.getAttribute('value') || '';
+      try {
+        const url = new URL(value, location.href);
+        if (url.protocol === 'https:' && /(^|\.)chatgpt\.com$/.test(url.hostname) &&
+            /^\/share\/[A-Za-z0-9_-]+/.test(url.pathname)) return url.href;
+      } catch {}
+    }
+    return '';
+  }
+  async function waitForShareUrl(timeout = 18000) {
+    const started = Date.now();
+    while (Date.now() - started < timeout) {
+      const link = readShareUrl();
+      if (link) return link;
+      await sleep(250);
+    }
+    return '';
+  }
+  function findShareAction(labels) {
+    const buttons = [...document.querySelectorAll('[role="dialog"] button, [role="dialog"] [role="button"], button')].filter(visibleElement);
+    return buttons.find(button => {
+      const label = [button.innerText, button.textContent, button.getAttribute('aria-label'),
+        button.getAttribute('data-testid'), button.title].filter(Boolean).join(' ').replace(/\s+/g, ' ').trim();
+      return labels.some(pattern => pattern.test(label));
+    });
+  }
+  async function createOrGetChatGPTShareUrl() {
+    if (detectPagePlatform().id !== 'chatgpt' || !getChatRoute()) {
+      throw new Error('Open a ChatGPT conversation first. This action currently creates share links for ChatGPT chats.');
+    }
+    const existing = readShareUrl();
+    if (existing) return existing;
+    const shareButton = [...document.querySelectorAll('button, [role="button"]')].find(button => {
+      if (!visibleElement(button)) return false;
+      const label = [button.innerText, button.getAttribute('aria-label'), button.title, button.dataset.testid]
+        .filter(Boolean).join(' ').trim();
+      return /(^|\b)share(\b|$)/i.test(label) && !/shared link/i.test(label);
+    });
+    if (!shareButton) throw new Error('Could not find ChatGPT’s Share button. Open the conversation fully and try again.');
+    shareButton.click();
+    await sleep(350);
+    let link = await waitForShareUrl(900);
+    if (link) return link;
+    const createButton = findShareAction([/create\s+(a\s+)?link/i, /create\s+shared\s+link/i, /share\s+link/i]);
+    if (createButton) {
+      createButton.click();
+      link = await waitForShareUrl(12000);
+      if (link) return link;
+    }
+    const copyButton = findShareAction([/copy\s+link/i, /copy\s+shared\s+link/i]);
+    if (copyButton) {
+      copyButton.click();
+      await sleep(350);
+      link = readShareUrl();
+      if (link) return link;
+      try {
+        const clipboard = await navigator.clipboard.readText();
+        const url = new URL(clipboard.trim());
+        if (url.protocol === 'https:' && /(^|\.)chatgpt\.com$/.test(url.hostname) &&
+            /^\/share\/[A-Za-z0-9_-]+/.test(url.pathname)) return url.href;
+      } catch {}
+    }
+    throw new Error('ChatGPT did not expose a share URL. Check the Share dialog and try again.');
+  }
+
+  async function archiveAndBeautify() {
+    if (archiveButton.disabled) return;
+    archiveButton.disabled = true;
+    let destination = null;
+    try {
+      destination = window.open('about:blank', '_blank');
+      if (!destination) throw new Error('The browser blocked the ChatVault tab. Allow popups for ChatGPT and try again.');
+      status('Creating or retrieving the ChatGPT share link…');
+      const shareUrl = await createOrGetChatGPTShareUrl();
+      const target = new URL(shareUrl);
+      if (target.origin !== 'https://chatgpt.com' && target.origin !== 'https://chat.openai.com') {
+        throw new Error('ChatGPT returned an unexpected share-link host.');
+      }
+      const handoff = new URL(CHATVAULT_HOME);
+      handoff.searchParams.set('cv-share', target.href);
+      handoff.searchParams.set('cv-auto', '1');
+      destination.location.replace(handoff.href);
+      status('✓ Share link captured. ChatVault is importing, archiving and beautifying this conversation in the new tab.');
+    } catch (error) {
+      if (destination && !destination.closed) destination.close();
+      status(error.message || 'Could not archive this conversation.', true);
+    } finally {
+      archiveButton.disabled = false;
+    }
+  }
+  archiveButton.addEventListener('click', archiveAndBeautify);
 
   async function beautifyCurrent() {
     status('Beautifying conversation…');
