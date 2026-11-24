@@ -11,7 +11,7 @@ const bridgeFile = fileURLToPath(new URL('../userscripts/chatvault-main.js', imp
 test('generated userscript is self-contained and parses', () => {
   const source = readFileSync(file, 'utf8');
   assert.match(source, /\/\/ ==UserScript==/);
-  assert.match(source, /@version\s+3.4.0/);
+  assert.match(source, /@version\s+3.5.0/);
   for (const host of ['chatgpt.com', 'claude.ai', 'gemini.google.com', 'g.co', 'grok.com', 'chat.deepseek.com', 'perplexity.ai', 'copilot.microsoft.com']) {
     assert.ok(source.includes(host), `missing @match host: ${host}`);
   }
@@ -22,7 +22,7 @@ test('generated userscript is self-contained and parses', () => {
   assert.match(source, /chatvault:toolbar-collapsed/);
   assert.match(source, /cv3-toggle/);
   assert.match(source, /cv3-archive/);
-  assert.match(source, /ARCHIVE \\+ BEAUTIFY/);
+  assert.match(source, /ARCHIVE \+ BEAUTIFY/);
   assert.match(source, /aria-expanded/);
   assert.match(source, /GM_addValueChangeListener/);
   assert.match(source, /https:\/\/\*\.chat-vault\.pages\.dev\/\*/);
