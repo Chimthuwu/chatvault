@@ -50,7 +50,7 @@ window.addEventListener('message', event => {
   if (event.data.type === 'chatvault:browser-extract-result') relayBrowserResult(event.data);
   if (event.data.type === 'chatvault:browser-extract-started' &&
       state.browserResolver && event.data.token === state.browserResolver.token) {
-    setStatus('Opening the share page in this tab. ChatVault will return automatically after extraction…');
+    setStatus('Opening the ChatGPT page in this tab. ChatVault will return automatically after extraction…');
     window.location.assign(state.browserResolver.targetUrl);
   }
 });
@@ -380,7 +380,9 @@ function renderArchive() {
     const detachControls = attached.map(child =>
       '<button class="archive-detach" type="button" data-detach-continuation="' + escapeArchiveText(child.key) + '">Detach ' +
       escapeArchiveText(child.conversation.title || 'continuation') + '</button>'
-    ).join('');
+    ).join('') + (entry.continuation && !entry.detachedFromParent
+      ? '<button class="archive-detach" type="button" data-detach-continuation="' + escapeArchiveText(entry.key) + '">Unlink from previous chat</button>'
+      : '');
     return '<div class="archive-node" style="--depth:' + Math.min(depth, 8) + '">' +
       '<div class="archive-node-main"><span class="archive-branch" aria-hidden="true">↳</span><div class="archive-node-copy"><strong>' + title +
       '</strong><small>' + totalMessages + ' messages · ' + escapeArchiveText(conv.metadata?.platform || 'import') +
