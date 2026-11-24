@@ -19,6 +19,9 @@ test('generated userscript is self-contained and parses', () => {
   assert.doesNotMatch(source, /^import\s/m);
   assert.match(source, /function makeZip/);
   assert.match(source, /function collectCurrentConversation/);
+  assert.match(source, /chatvault:toolbar-collapsed/);
+  assert.match(source, /cv3-toggle/);
+  assert.match(source, /aria-expanded/);
   assert.match(source, /GM_addValueChangeListener/);
   assert.match(source, /https:\/\/\*\.chat-vault\.pages\.dev\/\*/);
   assert.match(source, /isChatVaultOrigin/);
@@ -49,4 +52,6 @@ test('share URL imports use the automatic browser JSON handoff', () => {
   assert.match(bridge, /GM_getValue\(RESULT_KEY\)/);
   assert.doesNotMatch(bridge, /event\.source !== window/);
   assert.match(bridge, /isChatVaultOrigin/);
+  assert.match(bridge, /cv3-collapsed/);
+  assert.match(bridge, /Expand ChatVault tools/);
 });
