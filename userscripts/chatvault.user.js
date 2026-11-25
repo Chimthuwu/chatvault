@@ -4,7 +4,7 @@
 // ==UserScript==
 // @name         ChatVault — Export any LLM chat (MD / PDF / ZIP)
 // @namespace    https://github.com/Chimthuwu/chatvault
-// @version      3.6.3
+// @version      3.6.4
 // @updateURL    https://raw.githubusercontent.com/Chimthuwu/chatvault/main/userscripts/chatvault.user.js
 // @downloadURL  https://raw.githubusercontent.com/Chimthuwu/chatvault/main/userscripts/chatvault.user.js
 // @description  Vertical ChatVault sidebar with agent handoff, ChatGPT archive and beautify, exports, and automatic continuation retrieval.
@@ -1573,7 +1573,8 @@ async function collectCurrentConversation() {
     #cv3-toolbar #cv3-archive { background:linear-gradient(110deg,#17634d,#1a795e 55%,#176b73); border-color:#8bf0bd; color:#e2fff0; }
     #cv3-toolbar #cv3-handoff { background:linear-gradient(110deg,#49316f,#563b83 55%,#304f79); border-color:#c0a5ff; color:#f0e7ff; }
     #cv3-toolbar #cv3-handoff:hover:not(:disabled) { box-shadow:0 5px 18px rgba(137,100,255,.28),0 0 16px rgba(173,139,255,.2); border-color:#e2d3ff; }
-    #cv3-status { position:fixed; right:194px; top:50%; bottom:auto; transform:translateY(-50%); z-index:2147483000; width:min(340px,calc(100vw - 220px)); max-width:380px; padding:11px 15px; border-radius:11px; background:linear-gradient(135deg,rgba(17,31,31,.98),rgba(17,24,39,.98)); border:1px solid rgba(76,200,163,.52); color:#b4ffe4; font:13px/1.5 system-ui,sans-serif; box-shadow:0 10px 30px #000a,0 0 18px rgba(0,220,165,.1); display:none; overflow-wrap:anywhere; }
+    #cv3-status { position:relative; right:auto; top:auto; bottom:auto; transform:none; z-index:auto; width:100%; max-width:none; margin-top:2px; padding:9px 11px; border-radius:9px; background:linear-gradient(135deg,rgba(17,31,31,.98),rgba(17,24,39,.98)); border:1px solid rgba(76,200,163,.52); color:#b4ffe4; font:13px/1.5 system-ui,sans-serif; box-shadow:0 6px 18px #0007,0 0 12px rgba(0,220,165,.08); display:none; overflow-wrap:anywhere; }
+    #cv3-toolbar.cv3-collapsed #cv3-status { display:none!important; }
     @media (prefers-reduced-motion:no-preference) {
       #cv3-toolbar:not(.cv3-collapsed) #cv3-handoff { animation:cv3-soft-pulse 4.5s ease-in-out infinite; }
       @keyframes cv3-soft-pulse { 0%,100% { box-shadow:inset 0 1px rgba(255,255,255,.07),0 2px 7px rgba(0,0,0,.16); } 50% { box-shadow:inset 0 1px rgba(255,255,255,.12),0 3px 13px rgba(137,100,255,.13); } }
@@ -1593,7 +1594,7 @@ async function collectCurrentConversation() {
   actions.id = 'cv3-actions';
   const statusBox = document.createElement('div');
   statusBox.id = 'cv3-status';
-  document.body.append(toolbar, statusBox);
+  document.body.append(toolbar);
 
   let statusTimer = null;
   function dismissStatus() {
@@ -1662,7 +1663,7 @@ async function collectCurrentConversation() {
     try { localStorage.setItem(COLLAPSE_KEY, collapsed ? '1' : '0'); } catch {}
   }
   toggleButton.addEventListener('click', () => setCollapsed(!collapsed));
-  toolbar.append(toggleButton, actions);
+  toolbar.append(toggleButton, actions, statusBox);
   setCollapsed(collapsed);
 
   const CHATVAULT_HOME = 'https://chat-vault.pages.dev/';
