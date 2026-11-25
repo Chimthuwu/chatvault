@@ -4,7 +4,7 @@
 // ==UserScript==
 // @name         ChatVault — Export any LLM chat (MD / PDF / ZIP)
 // @namespace    https://github.com/Chimthuwu/chatvault
-// @version      3.6.2
+// @version      3.6.3
 // @updateURL    https://raw.githubusercontent.com/Chimthuwu/chatvault/main/userscripts/chatvault.user.js
 // @downloadURL  https://raw.githubusercontent.com/Chimthuwu/chatvault/main/userscripts/chatvault.user.js
 // @description  Vertical ChatVault sidebar with agent handoff, ChatGPT archive and beautify, exports, and automatic continuation retrieval.
@@ -878,90 +878,117 @@ const PROPOSED_RE = /\b(propose|proposed|suggest|suggested|could|might|maybe|con
 const CONSTRAINT_RE = /\b(must|must not|never|only|requires?|requirement|constraint|keep|preserve|avoid|do not|don't|cannot|can't)\b/i;
 const STATUS_RE = /\b(already|currently|implemented|working|completed|done|built|deployed|verified|tested|existing|supports?)\b/i;
 const QUESTION_RE = /\?|\b(unknown|unclear|not sure|needs? confirmation|open question|pending|blocked|TODO|TBD|not decided|not yet)\b/i;
+const HANDOFF_DECISION_RE = /\b(decided|agreed|chose|approved|rejected|dropped|we will|going with|final choice)\b/i;
+const HANDOFF_ACTION_RE = /^(?:next(?: step)?s?:|todo:|then\b|implement\b|add\b|fix\b|update\b|build\b|create\b|test\b|verify\b|wire\b|remove\b|replace\b)/i;
 
-function extractHandoffLines(text) {
-  let section = 'Conversation';
-  let inCodeFence = false;
-  const buckets = { context: [], decisions: [], proposed: [], constraints: [], status: [], open: [], actions: [] };
-  const seen = new Set();
-  const add = (key, value, source) => {
-    const clean = stripMd(value).replace(/^\s*(?:[-*+]\s+|\d+[.)]\s+)/, '').replace(/\s+/g, ' ').trim();
-    if (clean.length < 8 || clean.length > 420) return;
-    const id = key + ':' + clean.toLowerCase();
-    if (seen.has(id)) return;
-    seen.add(id);
-    buckets[key].push({ value: clean, source });
-  };
-  for (const [index, raw] of String(text).split('\n').entries()) {
-    const heading = raw.match(/^#{1,3}\s+(.+)$/);
-    if (heading) { section = stripMd(heading[1]); continue; }
-    if (!raw.trim()) continue;
-    const trimmed = raw.trim();
-    if (trimmed.startsWith(String.fromCharCode(96).repeat(3)) || trimmed.startsWith('~~~')) { inCodeFence = !inCodeFence; continue; }
-    if (inCodeFence || /^\s*>\s?/.test(raw)) continue;
-    const line = raw.trim();
-    const source = section === 'Conversation' ? 'line ' + (index + 1) : section;
-    if (buckets.context.length < 3 && line.length > 15) add('context', line, source);
-    if (DECISION_RE.test(line) && !PROPOSED_RE.test(line)) add('decisions', line, source);
-    if (PROPOSED_RE.test(line)) add('proposed', line, source);
-    if (CONSTRAINT_RE.test(line)) add('constraints', line, source);
-    if (STATUS_RE.test(line)) add('status', line, source);
-    if (QUESTION_RE.test(line) || /\b(waiting for|depends on|if we|unless)\b/i.test(line)) add('open', line, source);
-    if (/^(?:next(?: step)?s?:|todo:|then\b|implement\b|add\b|fix\b|update\b|build\b|create\b|test\b|verify\b|wire\b|remove\b|replace\b)/i.test(line) || /\b(next step|action item|follow[- ]?up)\b/i.test(line)) add('actions', line, source);
-  }
-  return buckets;
+function handoffExcerpt(value, limit = 420) {
+  const clean = stripMd(value).replace(/\s+/g, ' ').trim();
+  return clean.length <= limit ? clean : clean.slice(0, limit - 1).trimEnd() + '…';
 }
 
 function buildAgentHandoff(input, titleHint = '') {
-  const text = typeof input === 'string' ? input : renderMarkdown(input);
+  const isConversation = input && typeof input === 'object' && Array.isArray(input.messages);
+  const text = typeof input === 'string' ? input : renderMarkdown(input || {});
   const title = titleHint || (typeof input === 'string'
     ? (text.match(/^#\s+(.+)$/m)?.[1] || 'Conversation handoff')
-    : (input.title || 'Conversation handoff'));
-  const buckets = extractHandoffLines(text);
-  const render = (heading, items) => {
-    const lines = items.slice(0, 10).map(item => '- ' + item.value + ' _(source: ' + item.source + ')_');
-    return '## ' + heading + '\n\n' + (lines.length ? lines.join('\n') : '_No explicit items detected. Check the source transcript before assuming none exist._') + '\n';
+    : (input?.title || 'Conversation handoff'));
+  const messages = isConversation ? input.messages : [];
+  const userMessages = messages.map((message, index) => ({ message, index: index + 1 }))
+    .filter(({ message }) => message?.role === 'user' && messageToText(message).trim());
+  const latestUser = userMessages.at(-1);
+  const buckets = { decisions: [], constraints: [], proposals: [], progress: [], open: [], actions: [] };
+  const seen = new Set();
+  const add = (bucket, line, number, role) => {
+    const value = handoffExcerpt(line);
+    const key = bucket + ':' + value.toLowerCase();
+    if (value.length < 8 || seen.has(key)) return;
+    seen.add(key);
+    buckets[bucket].push({ value, source: 'message ' + number + ' (' + role + ')' });
   };
-  const files = [...new Set(text.match(FILE_RE) || [])];
-  const repos = [...new Set(text.match(REPO_RE) || [])];
+
+  for (const entry of messages.map((message, index) => ({ message, index: index + 1 }))) {
+    const role = entry.message?.role || 'unknown';
+    if (role !== 'user' && role !== 'assistant') continue;
+    let inFence = false;
+    for (const raw of messageToText(entry.message).split('\n')) {
+      const line = raw.trim();
+      if (!line) continue;
+      if (line.startsWith(String.fromCharCode(96).repeat(3)) || line.startsWith('~~~')) { inFence = !inFence; continue; }
+      if (inFence || line.startsWith('>') || /^#{1,6}\s/.test(line)) continue;
+      if (role === 'user' && HANDOFF_DECISION_RE.test(line) && !PROPOSED_RE.test(line)) add('decisions', line, entry.index, role);
+      if (role === 'user' && CONSTRAINT_RE.test(line)) add('constraints', line, entry.index, role);
+      if (PROPOSED_RE.test(line)) add('proposals', line, entry.index, role);
+      if (STATUS_RE.test(line)) add('progress', line, entry.index, role);
+      if (QUESTION_RE.test(line) || /\b(waiting for|depends on|if we|unless)\b/i.test(line)) add('open', line, entry.index, role);
+      if (role === 'user' && (HANDOFF_ACTION_RE.test(line) || /\b(next step|action item|follow[- ]?up)\b/i.test(line))) add('actions', line, entry.index, role);
+    }
+  }
+
+  const render = (heading, items, emptyNote) => {
+    const lines = items.slice(-12).map(item => '- ' + item.value + ' _(source: ' + item.source + ')_');
+    return '## ' + heading + '\n\n' + (lines.length ? lines.join('\n') : (emptyNote || '_No explicit items detected. Check the transcript before assuming none exist._')) + '\n';
+  };
+  const files = [...new Set(text.match(FILE_RE) || [])].slice(0, 40);
+  const repos = [...new Set(text.match(REPO_RE) || [])].slice(0, 20);
+  const firstRequest = userMessages[0] ? handoffExcerpt(messageToText(userMessages[0].message), 1200) : '';
+  const latestRequest = latestUser ? messageToText(latestUser.message).trim() : '';
+  const latestText = latestRequest.length > 3500
+    ? latestRequest.slice(0, 3500).trimEnd() + '\n\n[Latest request truncated; consult the full transcript.]'
+    : latestRequest;
+  const metadata = isConversation ? input.metadata || {} : {};
+
   return [
     '# Agent Handoff — ' + stripMd(title),
     '',
-    '> Generated locally by ChatVault using extractive rules. This is a briefing aid, not an authoritative interpretation.',
-    '> Verify every item against the source transcript. The generator does not infer implementation status or resolve contradictions.',
+    '> Generated locally by ChatVault using deterministic extractive rules. This is a briefing aid, not a live project-state report.',
+    '> Every extracted statement is attributed to its message and speaker. Assistant claims and proposals are not user approval or proof of implementation.',
     '',
-    '## Objective & context',
+    '## Read this first',
     '',
-    buckets.context.length ? buckets.context.map(item => '- ' + item.value + ' _(source: ' + item.source + ')_').join('\\n') : 'No concise objective could be extracted automatically. Read the source conversation to establish the actual task and scope.',
+    latestText || '_No user request was available. Read the transcript to establish the task._',
     '',
-    render('Confirmed decisions (explicit language)', buckets.decisions),
-    render('Requirements & constraints (detected wording)', buckets.constraints),
-    render('Current state / progress (detected wording)', buckets.status),
-    render('Proposals & ideas (not automatically approved)', buckets.proposed),
-    render('Open questions, dependencies & blockers', buckets.open),
-    render('Potential next actions (extracted, not prioritised)', buckets.actions),
+    '## Objective & original context',
+    '',
+    firstRequest || '_No opening user request was available._',
+    '',
+    '## Conversation metadata',
+    '',
+    '- **Platform:** ' + (metadata.platform || 'Unknown'),
+    '- **Extraction method:** ' + (metadata.extractionMethod || 'Unknown'),
+    '- **Messages captured:** ' + (messages.length || 'Unknown'),
+    '- **Source:** ' + (isConversation ? input.source || 'Not supplied' : 'See transcript metadata'),
+    '- **Export generated:** ' + (isConversation ? input.exportedAt || 'Not supplied' : 'Not supplied'),
+    '',
+    render('User decisions (explicit wording only)', buckets.decisions),
+    render('User requirements & constraints', buckets.constraints),
+    render('Assistant proposals (not automatically approved)', buckets.proposals),
+    render('Progress statements (claims; verify in repository)', buckets.progress),
+    render('Open questions, blockers & dependencies', buckets.open),
+    render('User action requests (chronological; not prioritised)', buckets.actions),
     '## Relevant files & repositories',
     '',
-    files.length || repos.length
-      ? [...files.map(file => '- ' + file), ...repos.map(repo => '- ' + repo)].join('\n')
-      : '_No file paths or repository URLs detected._',
+    files.length || repos.length ? [...files, ...repos].map(value => '- ' + value).join('\n') : '_No file paths or repository URLs detected._',
     '',
-    '## Agent instructions',
+    '## Receiving-agent instructions',
     '',
-    '- Read the relevant source conversation sections before making changes; use the full cleaned transcript when context or exact wording matters.',
-    '- Inspect the current repository state and existing documentation before editing. Do not assume this handoff describes the latest code.',
-    '- Preserve existing user changes. Do not reset, clean, overwrite, or discard unrelated work.',
-    '- Treat proposals as unapproved unless the conversation explicitly confirms them.',
-    '- Do not invent missing requirements, file paths, implementation status, or acceptance criteria. Ask only when a consequential ambiguity blocks safe progress.',
-    '- Make the smallest coherent change, run focused tests, then report what changed, what was actually verified, and what remains unverified.',
+    '1. Treat the latest user request above as the immediate task, while preserving earlier requirements that have not been superseded.',
+    '2. Read the transcript when exact wording, chronology, code, attachments, or conflicting statements matter.',
+    '3. Inspect the current repository, branch, working tree, and documentation before editing. This handoff is not a live repository snapshot.',
+    '4. Treat progress statements as unverified claims until checked. Words such as “working”, “tested”, “deployed”, and “verified” are not evidence by themselves.',
+    '5. Treat assistant proposals as suggestions unless the user explicitly accepts them.',
+    '6. Preserve user changes and working state. Avoid destructive resets, broad cleanup, unrelated refactors, and repeating completed work.',
+    '7. Continue directly where tools permit. Make reversible decisions autonomously; ask only when a consequential ambiguity blocks safe progress.',
+    '8. Run focused tests and report exact changes, commands and results, verified behaviour, and remaining uncertainty.',
     '',
     '## Acceptance criteria',
     '',
-    '_Not inferred. Derive these from explicit requirements in the source conversation and confirm any missing or conflicting criteria before declaring the task complete._',
+    '_Not automatically inferred. Derive criteria from explicit user requirements and the transcript. Do not claim completion for ambiguous or untested criteria._',
     '',
-    '## Source of truth',
+    '## Source of truth & limitations',
     '',
-    'Attach or provide the matching clean.md (or original transcript) alongside this handoff when the agent needs full chronology, exact examples, code snippets, or disputed context.',
+    '- The full transcript below is the source record.',
+    '- This brief does not establish current code state, resolve contradictions, interpret images/attachments, or prove tests and deployments.',
+    '- Inspect linked repositories and confirm important attachments are available before relying on them.',
     ''
   ].join('\n');
 }
@@ -1747,45 +1774,10 @@ async function collectCurrentConversation() {
       if (!conv || !Array.isArray(conv.messages) || !conv.messages.length) {
         throw new Error('No conversation messages were found on this page.');
       }
-      const userMessages = conv.messages.filter(message => message.role === 'user');
-      const firstRequest = userMessages.length ? messageToText(userMessages[0]) : '';
-      const requestIndex = userMessages.map((message, index) => ({ message, index }))
-        .filter(({ message }) => messageToText(message).trim().length);
-      const requestOutline = requestIndex.map(({ message }, index) => {
-        const excerpt = messageToText(message).replace(/\s+/g, ' ').trim();
-        return `${index + 1}. ${excerpt.length > 420 ? excerpt.slice(0, 417) + '…' : excerpt}`;
-      });
       const transcript = renderMarkdown(conv);
+      const structuredBrief = buildAgentHandoff(conv);
       const handoff = [
-        `# Agent Handoff — ${conv.title || 'Untitled conversation'}`,
-        '',
-        '> Generated by ChatVault. This document preserves the conversation as source context; it does not claim that unverified work is complete.',
-        '',
-        '## Task objective',
-        '',
-        firstRequest ? firstRequest : 'Infer the current task from the conversation transcript below.',
-        '',
-        '## Conversation details',
-        '',
-        `- **Conversation:** ${conv.title || 'Untitled conversation'}`,
-        `- **Platform:** ${conv.metadata?.platform || 'Unknown'}`,
-        `- **Source:** ${conv.source || location.href}`,
-        `- **Messages captured:** ${conv.messages.length}`,
-        `- **Generated:** ${new Date().toISOString()}`,
-        '',
-        '## User requests and direction',
-        '',
-        ...(requestOutline.length ? requestOutline : ['- No user messages could be summarized from the extracted conversation.']),
-        '',
-        '## Instructions for the receiving agent',
-        '',
-        '1. Read the complete transcript before acting; later messages may revise or supersede earlier requirements.',
-        '2. Identify the current objective, explicit constraints, decisions, completed work, unresolved issues, and the most recent requested next step.',
-        '3. Treat statements about implementation, tests, deployments, and merges as claims to verify against the actual repository or environment before relying on them.',
-        '4. Continue the work directly where tools and access permit. Do not merely write another handoff or ask the user to repeat context already present here.',
-        '5. Preserve existing user changes and working state. Avoid destructive resets, broad cleanup, or unrelated refactors.',
-        '6. If a required action cannot be completed, explain exactly what is blocked and what remains unverified.',
-        '',
+        structuredBrief,
         '## Full conversation transcript',
         '',
         transcript.trim(),
