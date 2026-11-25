@@ -376,14 +376,6 @@
       if (!conv || !Array.isArray(conv.messages) || !conv.messages.length) {
         throw new Error('No conversation messages were found on this page.');
       }
-      const userMessages = conv.messages.filter(message => message.role === 'user');
-      const firstRequest = userMessages.length ? messageToText(userMessages[0]) : '';
-      const requestIndex = userMessages.map((message, index) => ({ message, index }))
-        .filter(({ message }) => messageToText(message).trim().length);
-      const requestOutline = requestIndex.map(({ message }, index) => {
-        const excerpt = messageToText(message).replace(/\s+/g, ' ').trim();
-        return `${index + 1}. ${excerpt.length > 420 ? excerpt.slice(0, 417) + '…' : excerpt}`;
-      });
       const transcript = renderMarkdown(conv);
       const structuredBrief = buildAgentHandoff(conv);
       const handoff = [
@@ -392,7 +384,7 @@
         '',
         transcript.trim(),
         ''
-      ].join('\\n');
+      ].join('\n');
       try {
         await navigator.clipboard.writeText(handoff);
       } catch (clipboardError) {
