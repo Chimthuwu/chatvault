@@ -162,7 +162,7 @@
     #cv3-toolbar button {
       position:relative; isolation:isolate; flex:0 0 auto; width:100%; min-height:36px; padding:8px 9px;
       border-radius:9px; border:1px solid rgba(87,173,148,.45); background:linear-gradient(115deg,rgba(25,74,62,.98),rgba(21,58,61,.98));
-      color:#a7ffe0; font:750 10px/1.35 system-ui,sans-serif; cursor:pointer; text-align:left; white-space:normal; overflow-wrap:anywhere;
+      color:#a7ffe0; font:750 11px/1.4 system-ui,sans-serif; cursor:pointer; text-align:left; white-space:normal; overflow-wrap:anywhere;
       box-shadow:inset 0 1px rgba(255,255,255,.07),0 2px 7px rgba(0,0,0,.16);
       transition:transform .17s ease,background .2s ease,border-color .2s ease,color .2s ease,box-shadow .2s ease,filter .2s ease;
     }
