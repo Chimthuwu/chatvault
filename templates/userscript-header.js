@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         ChatVault — Export any LLM chat (MD / PDF / ZIP)
 // @namespace    https://github.com/Chimthuwu/chatvault
-// @version      3.6.2
+// @version      3.6.3
 // @updateURL    https://raw.githubusercontent.com/Chimthuwu/chatvault/main/userscripts/chatvault.user.js
 // @downloadURL  https://raw.githubusercontent.com/Chimthuwu/chatvault/main/userscripts/chatvault.user.js
 // @description  Vertical ChatVault sidebar with agent handoff, ChatGPT archive and beautify, exports, and automatic continuation retrieval.
