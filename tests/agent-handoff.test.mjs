@@ -43,5 +43,5 @@ test('progress statements are attributed as claims and not represented as verifi
 test('string-only input remains supported without fabricating a latest request', () => {
   const brief = buildAgentHandoff('# Old handoff\n\nSome context.');
   assert.match(brief, /No user request was available/);
-  assert.match(brief, /Some context/);
+  assert.match(brief, /Old handoff/);
 });
