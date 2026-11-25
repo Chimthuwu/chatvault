@@ -31,8 +31,8 @@ test('generated userscript is self-contained and parses', () => {
   assert.ok(source.includes('navigator.clipboard.writeText(handoff)'));
   assert.match(source, /Full conversation transcript/);
   assert.match(source, /buildAgentHandoff/);
-  assert.match(source, /User decisions \\(explicit wording only\\)/);
-  assert.match(source, /Progress statements \\(claims; verify in repository\\)/);
+  assert.match(source, /User decisions \(explicit wording only\)/);
+  assert.match(source, /Progress statements \(claims; verify in repository\)/);
   assert.match(source, /flex-direction: column/);
   assert.match(source, /position: fixed; top: 50%/);
   assert.match(source, /ARCHIVE \+ BEAUTIFY/);
