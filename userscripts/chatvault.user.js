@@ -4,7 +4,7 @@
 // ==UserScript==
 // @name         ChatVault — Export any LLM chat (MD / PDF / ZIP)
 // @namespace    https://github.com/Chimthuwu/chatvault
-// @version      3.6.1
+// @version      3.6.2
 // @updateURL    https://raw.githubusercontent.com/Chimthuwu/chatvault/main/userscripts/chatvault.user.js
 // @downloadURL  https://raw.githubusercontent.com/Chimthuwu/chatvault/main/userscripts/chatvault.user.js
 // @description  Vertical ChatVault sidebar with agent handoff, ChatGPT archive and beautify, exports, and automatic continuation retrieval.
@@ -1568,10 +1568,26 @@ async function collectCurrentConversation() {
   statusBox.id = 'cv3-status';
   document.body.append(toolbar, statusBox);
 
+  let statusTimer = null;
+  function dismissStatus() {
+    if (statusTimer !== null) clearTimeout(statusTimer);
+    statusTimer = null;
+    statusBox.style.display = 'none';
+  }
   function status(message, error = false) {
+    if (statusTimer !== null) clearTimeout(statusTimer);
+    statusTimer = null;
     statusBox.textContent = message;
-    statusBox.style.display = 'block';
     statusBox.style.color = error ? '#ffaaaa' : '#9fffd9';
+    // The notification belongs to the expanded toolbar. Never leave it floating
+    // beside the page after the user collapses the ChatVault control.
+    statusBox.style.display = collapsed ? 'none' : 'block';
+    if (!collapsed) {
+      statusTimer = setTimeout(() => {
+        statusBox.style.display = 'none';
+        statusTimer = null;
+      }, 6500);
+    }
     console[error ? 'error' : 'log'](PREFIX, message);
   }
 
@@ -1611,6 +1627,7 @@ async function collectCurrentConversation() {
   } catch {}
   function setCollapsed(next) {
     collapsed = Boolean(next);
+    if (collapsed) dismissStatus();
     toolbar.classList.toggle('cv3-collapsed', collapsed);
     toggleButton.textContent = collapsed ? '🔓📜 CV +' : '🔓📜 CV −';
     toggleButton.title = collapsed ? 'Expand ChatVault tools' : 'Collapse ChatVault tools';
